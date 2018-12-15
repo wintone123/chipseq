@@ -12,6 +12,8 @@ egs_regions <- GRanges(seqnames = Rle(paste0("chr", egs$chromosome_name)),
                       gene = egs$external_gene_name)
 egs_total_length <- sum(width(reduce(egs_regions)))
 
+# remove egs overlapping regions
+
 # peaks in egs regions
 for(name in read_list){
   egs_peak_sum <- sum(countOverlaps(egs_regions, eval(parse(text = name))))
@@ -32,18 +34,7 @@ for(name in read_list){
   print(paste(name, "has", promoter_peak_sum, "in promoter regions", sep = " "))
 }
 
-# peaks in certain promoter with normalization (+/- 200 bp around TSS)
-peaks_in_promoter <- function(gene_name){
-  promoter_index <- match(gene_name, promoter_regions$gene)
-  for(name in read_list){
-    index <- match(name, read_list)
-    peak_sum <- sum(countOverlaps(promoter_regions[promoter_index], eval(parse(text = name)))) / fold_list[index]
-    print(paste(name, "has", peak_sum, "peaks in", gene_name, "promoter", sep = " "))
-  }
-}
-peaks_in_promoter("")
-
-# peaks in promoters (list export)
+# peaks in promoter regions (+/- 200 bp around TSS, df export)
 promoter_peaks_export <- data.frame(t(unlist(c("gene_name", read_list))), stringsAsFactors = FALSE)
 for(gene_index in c(1:length(promoter_regions))){
   peak_sum_list <- c(promoter_regions[gene_index]$gene)
@@ -56,6 +47,17 @@ for(gene_index in c(1:length(promoter_regions))){
 }
 colnames(promoter_peaks_export) <- promoter_peaks_export[1,]
 promoter_peaks_export <- promoter_peaks_export[c(2:nrow(promoter_peaks_export)),]
+
+# peaks in certain promoter with normalization (+/- 200 bp around TSS)
+peaks_in_promoter <- function(gene_name){
+  promoter_index <- match(gene_name, promoter_regions$gene)
+  for(name in read_list){
+    index <- match(name, read_list)
+    peak_sum <- sum(countOverlaps(promoter_regions[promoter_index], eval(parse(text = name)))) / fold_list[index]
+    print(paste(name, "has", peak_sum, "peaks in", gene_name, "promoter", sep = " "))
+  }
+}
+peaks_in_promoter("")
 
 # overlapping promoter with enriched regions
 ovlp2 <- findOverlaps(enriched_regions, promoter_regions)
@@ -342,7 +344,7 @@ gd_temp <- gd_temp[c(2:nrow(gd_temp)),]
 gd_temp$chromosome_name <- as.numeric(gd_temp$chromosome_name)
 gd_temp$gd_start <- as.numeric(gd_temp$gd_start)
 gd_temp$gd_end <- as.numeric(gd_temp$gd_end)
-gd_regions <- GRanges(seqnames = Rle(gd_temp$chromosome_name),
+gd_regions <- GRanges(seqnames = Rle(gd_temp$chromosome_name), 
                       ranges = IRanges(start = gd_temp$gd_start, end = gd_temp$gd_end))
 
 # peaks in intragenic regions (gene distance > 200kb)
