@@ -19,7 +19,7 @@ prepareChipseq <- function(reads){
   reads_extended = resize(reads, width = frag_len)
   return(trim(reads_extended))
 }
-path = "d:/chipseq/test1"  # bed file path 
+path = "/Users/rambp/OneDrive/bioinfo/chipseq/protocol"  # bed file path 
 load_list <- list.files(path)
 read_list <- vector()
 for(file_name in load_list){

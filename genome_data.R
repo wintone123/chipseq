@@ -12,6 +12,23 @@ egs_regions <- GRanges(seqnames = Rle(paste0("chr", egs$chromosome_name)),
                       gene = egs$external_gene_name)
 egs_total_length <- sum(width(reduce(egs_regions)))
 
+# peaks in egs regions
+for(name in read_list){
+  egs_peak_sum <- sum(countOverlaps(egs_regions, eval(parse(text = name))))
+  print(paste(name, "has", egs_peak_sum, "in egs regions", sep = " "))
+}
+
+# peaks in certain egs
+peaks_in_egs <- function(gene_name){
+  egs_index <- match(gene_name, egs_regions$gene)
+  for(name in read_list){
+    index <- match(name, read_list)
+    peak_sum <- sum(countOverlaps(egs_regions[egs_index], eval(parse(text = name)))) / fold_list[index]
+    print(paste(name, "has", peak_sum, "peaks in", gene_name, "egs", sep = " "))
+  }
+}
+peaks_in_egs("")
+
 # egs overlapping regions
 for(i in c(1: nrow(egs))){
   if(i == 1){
@@ -46,10 +63,10 @@ egs_overlap_regions <- GRanges(seqnames = Rle(egs_overlap$chromosome_name),
                                ranges = IRanges(start = egs_overlap$start, end = egs_overlap$end),
                                strand = Rle(rep("*", nrow(egs_overlap))))
 
-# peaks in egs regions
+# peaks in egs overlapp regions
 for(name in read_list){
-  egs_peak_sum <- sum(countOverlaps(egs_regions, eval(parse(text = name))))
-  print(paste(name, "has", egs_peak_sum, "in egs regions", sep = " "))
+  egs_peak_sum <- sum(countOverlaps(egs_overlap_regions, eval(parse(text = name))))
+  print(paste(name, "has", egs_peak_sum, "in egs overlap regions", sep = " "))
 }
 
 # set promoter (+/- 200 bp around TSS)
