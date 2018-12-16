@@ -13,7 +13,38 @@ egs_regions <- GRanges(seqnames = Rle(paste0("chr", egs$chromosome_name)),
 egs_total_length <- sum(width(reduce(egs_regions)))
 
 # remove egs overlapping regions
-
+for(i in c(1: nrow(egs))){
+  if(i == 1){
+    start_temp <- egs[i,]$start_position
+    end_temp <- egs[i,]$end_position
+    egs_overlap_list <- c(start_temp, end_temp)
+  }
+  else{
+    if(egs[i,]$start_position > end_temp){
+      start_temp <- egs[i,]$start_position
+      end_temp <- egs[i,]$end_position
+      egs_overlap_list <- append(egs_overlap_list, c(start_temp, end_temp))
+    }
+    else{
+      if(egs[i,]$end_position >= end_temp){
+        end_temp <- egs[i,]$end_position
+        egs_overlap_list[length(egs_overlap_list)] <- end_temp
+      }
+    }
+  }
+}
+egs_overlap <- data.frame("chromosome_name","start","end","num", stringsAsFactors=FALSE)
+for(i in c(1:(length(egs_overlap_list)/2))){
+  egs_temp <- c(chromosome, egs_overlap_list[i*2-1], egs_overlap_list[i*2],i)
+  egs_overlap[nrow(egs_overlap)+1,] <- egs_temp
+}
+colnames(egs_overlap) <- egs_overlap[1,]
+egs_overlap <- egs_overlap[c(2:nrow(egs_overlap)),]
+egs_overlap$start <- as.numeric(egs_overlap$start)
+egs_overlap$end <- as.numeric(egs_overlap$end)
+egs_overlap_regions <- GRanges(seqnames = Rle(egs_overlap$chromosome_name),
+                               ranges = IRanges(start = egs_overlap$start, end = egs_overlap$end),
+                               strand = Rle(rep("*", nrow(egs_overlap))))
 
 # peaks in egs regions
 for(name in read_list){
@@ -131,8 +162,6 @@ peaks_in_gene_exon("")
 # intron isolation from exon database
 intron <- data.frame("ensembl_gene_id","external_gene_name","chromosome_name",
                  "strand", "intron_chrom_start","intron_chrom_end", stringsAsFactors=FALSE)
-intron_list <- vector()
-intron_temp_2 <- vector()
 for(i in c(1:nrow(exon))){
   if(exon[i,6] == 1){
     if(i == 1){
@@ -179,10 +208,10 @@ for(i in c(1:nrow(exon))){
         intron_temp_1 <- intron_list[1:4]
         intron_list <- intron_list[5:length(intron_list)]
         for(j in c(1:(length(intron_list)/2-1))){
+          intron_temp_2 <- vector()
           intron_temp_2 <- append(intron_temp_1, intron_list[j*2])
           intron_temp_2 <- append(intron_temp_2, intron_list[j*2+1])
           intron[nrow(intron) + 1,] <- intron_temp_2 
-          intron_temp_2 <- vector()
         }
         intron_list <- vector()
       }
@@ -206,10 +235,10 @@ for(i in c(1:nrow(exon))){
         intron_temp_1 <- intron_list[1:4]
         intron_list <- intron_list[5:length(intron_list)]
         for(j in c(1:(length(intron_list)/2-1))){
+          intron_temp_2 <- vector()
           intron_temp_2 <- append(intron_temp_1, intron_list[j*2])
           intron_temp_2 <- append(intron_temp_2, intron_list[j*2+1])
           intron[nrow(intron) + 1,] <- intron_temp_2 
-          intron_temp_2 <- vector()
         }
         intron_list <- vector()
       }
@@ -233,10 +262,10 @@ for(i in c(1:nrow(exon))){
         intron_temp_1 <- intron_list[1:4]
         intron_list <- intron_list[5:length(intron_list)]
         for(j in c(1:(length(intron_list)/2-1))){
+          intron_temp_2 <- vector()
           intron_temp_2 <- append(intron_temp_1, intron_list[j*2])
           intron_temp_2 <- append(intron_temp_2, intron_list[j*2+1])
           intron[nrow(intron) + 1,] <- intron_temp_2 
-          intron_temp_2 <- vector()
         }
         intron_list <- vector()
       }
@@ -318,14 +347,18 @@ for(name in read_list){
 # intragenic regions isolation (gene distance > 200kb)
 gd_list <- c(1)
 for(i in c(1:nrow(egs))){
-  if(i != nrow(egs)){
-    if(egs[i+1,4] - egs[i,5] > 200000){
+  if(i == 1)){
+    gd_list <- append(gd_list, egs[i,4]-100000)
+    gd_list <- append(gd_list, egs[i,5]+100000)
+  }
+  else if(i == nrow(egs)){
+    if(egs[i,4] - egs[i-1,5] > 200000){
       gd_list <- append(gd_list, egs[i,4]-100000)
       gd_list <- append(gd_list, egs[i,5]+100000)
     }
   }
   else{
-    if(egs[i,4] - egs[i-1,5] > 200000){
+    if(egs[i,4] - egs[i-1,5] > 200000 & egs[i+1,4] - egs[i,5] > 200000){
       gd_list <- append(gd_list, egs[i,4]-100000)
       gd_list <- append(gd_list, egs[i,5]+100000)
     }
