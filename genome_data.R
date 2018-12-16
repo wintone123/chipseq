@@ -12,30 +12,30 @@ egs_regions <- GRanges(seqnames = Rle(paste0("chr", egs$chromosome_name)),
                       gene = egs$external_gene_name)
 egs_total_length <- sum(width(reduce(egs_regions)))
 
-# remove egs overlapping regions
+# egs overlapping regions
 for(i in c(1: nrow(egs))){
   if(i == 1){
-    start_temp <- egs[i,]$start_position
-    end_temp <- egs[i,]$end_position
-    egs_overlap_list <- c(start_temp, end_temp)
+    start <- egs[i,]$start_position
+    end <- egs[i,]$end_position
+    egs_overlap_list <- c(start, end)
   }
   else{
-    if(egs[i,]$start_position > end_temp){
-      start_temp <- egs[i,]$start_position
-      end_temp <- egs[i,]$end_position
-      egs_overlap_list <- append(egs_overlap_list, c(start_temp, end_temp))
+    if(egs[i,]$start_position > end){
+      start <- egs[i,]$start_position
+      end <- egs[i,]$end_position
+      egs_overlap_list <- append(egs_overlap_list, c(start, end))
     }
     else{
-      if(egs[i,]$end_position >= end_temp){
-        end_temp <- egs[i,]$end_position
-        egs_overlap_list[length(egs_overlap_list)] <- end_temp
+      if(egs[i,]$end_position >= end){
+        end <- egs[i,]$end_position
+        egs_overlap_list[length(egs_overlap_list)] <- end
       }
     }
   }
 }
-egs_overlap <- data.frame("chromosome_name","start","end","num", stringsAsFactors=FALSE)
+egs_overlap <- data.frame("chromosome_name","start","end", stringsAsFactors=FALSE)
 for(i in c(1:(length(egs_overlap_list)/2))){
-  egs_temp <- c(chromosome, egs_overlap_list[i*2-1], egs_overlap_list[i*2],i)
+  egs_temp <- c(chromosome, egs_overlap_list[i*2-1], egs_overlap_list[i*2])
   egs_overlap[nrow(egs_overlap)+1,] <- egs_temp
 }
 colnames(egs_overlap) <- egs_overlap[1,]
@@ -347,35 +347,27 @@ for(name in read_list){
 # intragenic regions isolation (gene distance > 200kb)
 gd_list <- c(1)
 for(i in c(1:nrow(egs))){
-  if(i == 1)){
-    gd_list <- append(gd_list, egs[i,4]-100000)
-    gd_list <- append(gd_list, egs[i,5]+100000)
-  }
-  else if(i == nrow(egs)){
-    if(egs[i,4] - egs[i-1,5] > 200000){
-      gd_list <- append(gd_list, egs[i,4]-100000)
-      gd_list <- append(gd_list, egs[i,5]+100000)
-    }
+  if(i == 1){
+    start <- egs[i,4]-100000
+    end <- egs[i,5]+100000
+    gd_list <- append(gd_list, c(start, end))
   }
   else{
-    if(egs[i,4] - egs[i-1,5] > 200000 & egs[i+1,4] - egs[i,5] > 200000){
-      gd_list <- append(gd_list, egs[i,4]-100000)
-      gd_list <- append(gd_list, egs[i,5]+100000)
+    if(egs[i,4] - end > 200000){
+      start <- egs[i,4]-100000
+      end <- egs[i,5]+100000
+      gd_list <- append(gd_list, c(start, end))
     }
   }
 }
 gd_list <- append(gd_list, seqlengths(genome)[6])
 gd_temp <- data.frame("chromosome_name", "gd_start", "gd_end", stringsAsFactors=FALSE)
-gd_temp_list <- c(chromosome)
 for(i in c(1:(length(gd_list)/2))){
-  gd_temp_list <- append(gd_temp_list, gd_list[i*2-1])
-  gd_temp_list <- append(gd_temp_list, gd_list[i*2])
+  gd_temp_list <- c(chromosome, gd_list[i*2-1], gd_list[i*2])
   gd_temp[nrow(gd_temp)+1,] <- gd_temp_list
-  gd_temp_list <- c(strsplit(chromosome, split = "r")[[1]][2])
 }
 colnames(gd_temp) <- gd_temp[1,]
 gd_temp <- gd_temp[c(2:nrow(gd_temp)),]
-gd_temp$chromosome_name <- as.numeric(gd_temp$chromosome_name)
 gd_temp$gd_start <- as.numeric(gd_temp$gd_start)
 gd_temp$gd_end <- as.numeric(gd_temp$gd_end)
 gd_regions <- GRanges(seqnames = Rle(gd_temp$chromosome_name), 
