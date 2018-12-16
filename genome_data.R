@@ -14,6 +14,7 @@ egs_total_length <- sum(width(reduce(egs_regions)))
 
 # remove egs overlapping regions
 
+
 # peaks in egs regions
 for(name in read_list){
   egs_peak_sum <- sum(countOverlaps(egs_regions, eval(parse(text = name))))
