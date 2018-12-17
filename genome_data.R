@@ -30,6 +30,7 @@ peaks_in_egs <- function(gene_name){
 peaks_in_egs("")
 
 # egs overlapping regions
+egs <- egs[order(egs$start_position),]
 for(i in c(1: nrow(egs))){
   if(i == 1){
     start <- egs[i,]$start_position
@@ -160,6 +161,116 @@ for(name in read_list){
   exon_peak_sum <- sum(countOverlaps(exon_regions, eval(parse(text = name))))
   print(paste(name, "has", exon_peak_sum, "in exon regions", sep = " "))
 }
+
+# exon extend regions and intron from exon extend regions
+exon_extend <- data.frame("external_gene_name", "exon_start", "exon_end", stringsAsFactors = FALSE)
+intron_from_exon_extend <- data.frame("external_gene_name", "intron_start", "intron_end", stringsAsFactors = FALSE)
+for(name in unique(exon$external_gene_name)){
+  name_index_list <- which(exon$external_gene_name == name)
+  name_temp <- exon[name_index_list,]
+  name_temp <- name_temp[order(name_temp[4]),]
+  for(i in c(1:nrow(name_temp))){
+    if(i == 1){
+      start <- name_temp[i,4]
+      end <- name_temp[i,5]
+      exon_extend_list <- c(start, end)
+    }
+    else{
+      if(name_temp[i,4] > end){
+        start <- name_temp[i,4]
+        end <- name_temp[i,5]
+        exon_extend_list <- append(exon_extend_list, c(start, end))
+      }
+      else{
+        if(name_temp[i,5] >= end){
+          end <- name_temp[i,5]
+          exon_extend_list[length(exon_extend_list)] <- end
+        }
+      }
+    }
+  }
+  for(i in c(1:(length(exon_extend_list)/2))){
+    exon_extend[nrow(exon_extend)+1,] <- c(name, exon_extend_list[i*2-1], exon_extend_list[i*2])
+  }
+  if(length(exon_extend_list) >= 4){
+    for(i in c(1:(length(exon_extend_list)/2-1))){
+      intron_from_exon_extend[nrow(intron_from_exon_extend)+1,] <- c(name, exon_extend_list[i*2]+1, exon_extend_list[i*2+1]-1)
+    }
+  }
+}
+colnames(exon_extend) <- exon_extend[1,]
+exon_extend <- exon_extend[c(2:nrow(exon_extend)),]
+exon_extend$exon_start <- as.numeric(exon_extend$exon_start)
+exon_extend$exon_end <- as.numeric(exon_extend$exon_end)
+exon_extend_regions <- GRanges(seqnames = Rle(chromosome),
+                                ranges = IRanges(start = exon_extend$exon_start, end = exon_extend$exon_end),
+                                strand = Rle("*"))
+colnames(intron_from_exon_extend) <- intron_from_exon_extend[1,]
+intron_from_exon_extend <- intron_from_exon_extend[c(2:nrow(intron_from_exon_extend)),]
+intron_from_exon_extend$intron_start <- as.numeric(intron_from_exon_extend$intron_start)
+intron_from_exon_extend$intron_end <- as.numeric(intron_from_exon_extend$intron_end)
+intron_from_exon_extend_regions <- GRanges(seqnames = Rle(chromosome),
+                                    ranges = IRanges(start = intron_from_exon_extend$intron_start, 
+                                                     end = intron_from_exon_extend$intron_end),
+                                    strand = Rle("*"))
+
+# intron extend regions and exon from intron extend regions
+intron_extend <- data.frame("external_gene_name", "intron_start", "intron_end", stringsAsFactors = FALSE)
+exon_from_intron_extend <- data.frame("external_gene_name", "exon_start", "exon_end", stringsAsFactors = FALSE)
+for(name in unique(exon$external_gene_name)){
+  name_index_list <- which(exon$external_gene_name == name)
+  name_temp <- exon[name_index_list,]
+  name_temp <- name_temp[order(name_temp[4]),]
+  for(i in c(1:nrow(name_temp))){
+    if(i == 1){
+      start <- name_temp[i,4]
+      end <- name_temp[i,5]
+      intron_extend_list <- c(start, end)
+    }
+    else{
+      if(name_temp[i,4] > end){
+        start <- name_temp[i,4]
+        end <- name_temp[i,5]
+        intron_extend_list <- append(intron_extend_list, c(start, end))
+      }
+      else{
+        if(name_temp[i,5] <= end){
+          start <- name_temp[i,4]
+          end <- name_temp[i,5]
+          intron_extend_list[length(intron_extend_list)-1] <- start
+          intron_extend_list[length(intron_extend_list)] <- end
+        }
+        else{
+          start <- name_temp[i,4]
+          intron_extend_list[length(intron_extend_list)-1] <- start
+        }
+      }
+    }
+  }
+  for(i in c(1:(length(intron_extend_list)/2))){
+    exon_from_intron_extend[nrow(exon_from_intron_extend)+1,] <- c(name, intron_extend_list[i*2-1], intron_extend_list[i*2])
+  }
+  if(length(intron_extend_list) >= 4){
+    for(i in c(1:(length(intron_extend_list)/2-1))){
+      intron_extend[nrow(intron_extend)+1,] <- c(name, intron_extend_list[i*2]+1, intron_extend_list[i*2+1]-1)
+    }
+  }
+}
+colnames(intron_extend) <- intron_extend[1,]
+intron_extend <- intron_extend[c(2:nrow(intron_extend)),]
+intron_extend$intron_start <- as.numeric(intron_extend$intron_start)
+intron_extend$intron_end <- as.numeric(intron_extend$intron_end)
+intron_extend_regions <- GRanges(seqnames = Rle(chromosome),
+                                ranges = IRanges(start = intron_extend$intron_start, end = intron_extend$intron_end),
+                                strand = Rle("*", nrow(intron_extend)))
+colnames(exon_from_intron_extend) <- exon_from_intron_extend[1,]
+exon_from_intron_extend <- exon_from_intron_extend[c(2:nrow(exon_from_intron_extend)),]
+exon_from_intron_extend$exon_start <- as.numeric(exon_from_intron_extend$exon_start)
+exon_from_intron_extend$exon_end <- as.numeric(exon_from_intron_extend$exon_end)
+exon_from_intron_extend_regions <- GRanges(seqnames = Rle(chromosome),
+                                    ranges = IRanges(start = exon_from_intron_extend$exon_start, 
+                                                     end = exon_from_intron_extend$exon_end),
+                                    strand = Rle("*", nrow(exon_from_intron_extend)))
 
 # peaks in certain gene exon with normalization
 peaks_in_gene_exon <- function(gene_name){
@@ -377,7 +488,7 @@ for(i in c(1:nrow(egs))){
     }
   }
 }
-gd_list <- append(gd_list, seqlengths(genome)[6])
+gd_list <- append(gd_list, seqlengths(genome)[strsplit(chromosome, split = "r")[[1]][2]])
 gd_temp <- data.frame("chromosome_name", "gd_start", "gd_end", stringsAsFactors=FALSE)
 for(i in c(1:(length(gd_list)/2))){
   gd_temp_list <- c(chromosome, gd_list[i*2-1], gd_list[i*2])
