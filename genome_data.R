@@ -168,7 +168,7 @@ intron_from_exon_extend <- data.frame("external_gene_name", "intron_start", "int
 for(name in unique(exon$external_gene_name)){
   name_index_list <- which(exon$external_gene_name == name)
   name_temp <- exon[name_index_list,]
-  name_temp <- name_temp[order(name_temp[4]),]
+  name_temp <- name_temp[order(name_temp$exon_chrom_start),]
   for(i in c(1:nrow(name_temp))){
     if(i == 1){
       start <- name_temp[i,4]
@@ -214,13 +214,56 @@ intron_from_exon_extend_regions <- GRanges(seqnames = Rle(chromosome),
                                                      end = intron_from_exon_extend$intron_end),
                                     strand = Rle("*"))
 
+# peaks in certain extend gene exon with normalization 
+peaks_in_gene_exon <- function(gene_name){
+  index_list <- which(exon_extend$external_gene_name == gene_name)
+  assign(gene_name, GRanges(seqnames = Rle(chromosome),
+                            ranges = IRanges(start = exon_extend[index_list,]$exon_start, end = exon_extend[index_list,]$exon_end),
+                            strand = Rle("*",length(index_list)), 
+                            gene = exon_extend[index_list,]$external_gene_name))
+  for(name in read_list){
+    index <- match(name, read_list)
+    peak_sum <- sum(countOverlaps(eval(parse(text = gene_name)), eval(parse(text = name)))) / fold_list[index]
+    print(paste(name, "has", peak_sum, "peaks in", gene_name, "exon regions", sep = " "))
+  }
+}
+peaks_in_gene_exon("")
+
+# peaks in certain gene intron from extend exon with normalization 
+peaks_in_gene_intron <- function(gene_name){
+  index_list <- which(intron_from_exon_extend$external_gene_name == gene_name)
+  assign(gene_name, GRanges(seqnames = Rle(chromosome),
+                            ranges = IRanges(start = intron_from_exon_extend[index_list,]$intron_start,
+                                             end = intron_from_exon_extend[index_list,]$intron_end),
+                            strand = Rle("*",length(index_list)), 
+                            gene = intron_from_exon_extend[index_list,]$external_gene_name))
+  for(name in read_list){
+    index <- match(name, read_list)
+    peak_sum <- sum(countOverlaps(eval(parse(text = gene_name)), eval(parse(text = name)))) / fold_list[index]
+    print(paste(name, "has", peak_sum, "peaks in", gene_name, "exon regions", sep = " "))
+  }
+}
+peaks_in_gene_exon("")
+
+# peaks in extend gene exon regions
+for(name in read_list){
+  peak_sum <- sum(countOverlaps(exon_extend_regions, eval(parse(text = name))))
+  print(paste(name, "has", peak_sum, "in extend exon regions", sep = " "))
+}
+
+# peaks in gene intron regions from extend exon
+for(name in read_list){
+  peak_sum <- sum(countOverlaps(intron_from_exon_extend_regions, eval(parse(text = name))))
+  print(paste(name, "has", intron_from_exon_extend_regions, "in intron regions", sep = " "))
+}
+
 # intron extend regions and exon from intron extend regions
 intron_extend <- data.frame("external_gene_name", "intron_start", "intron_end", stringsAsFactors = FALSE)
 exon_from_intron_extend <- data.frame("external_gene_name", "exon_start", "exon_end", stringsAsFactors = FALSE)
 for(name in unique(exon$external_gene_name)){
   name_index_list <- which(exon$external_gene_name == name)
   name_temp <- exon[name_index_list,]
-  name_temp <- name_temp[order(name_temp[4]),]
+  name_temp <- name_temp[order(name_temp$exon_chrom_start),]
   for(i in c(1:nrow(name_temp))){
     if(i == 1){
       start <- name_temp[i,4]
@@ -272,173 +315,12 @@ exon_from_intron_extend_regions <- GRanges(seqnames = Rle(chromosome),
                                                      end = exon_from_intron_extend$exon_end),
                                     strand = Rle("*", nrow(exon_from_intron_extend)))
 
-# peaks in certain gene exon with normalization
-peaks_in_gene_exon <- function(gene_name){
-  index_list <- which(exon$external_gene_name == gene_name)
-  assign(gene_name, GRanges(seqnames = Rle(paste0("chr", exon[index_list,3])),
-                            ranges = IRanges(start = exon[index_list,4], end = exon[index_list,5]),
-                            strand = Rle("*",length(index_list)), 
-                            gene = exon[index_list,2]))
-  for(name in read_list){
-    index <- match(name, read_list)
-    peak_sum <- sum(countOverlaps(eval(parse(text = gene_name)), eval(parse(text = name)))) / fold_list[index]
-    print(paste(name, "has", peak_sum, "peaks in", gene_name, "exon regions", sep = " "))
-  }
-}
-peaks_in_gene_exon("")
-
-# intron isolation from exon database
-intron <- data.frame("ensembl_gene_id","external_gene_name","chromosome_name",
-                 "strand", "intron_chrom_start","intron_chrom_end", stringsAsFactors=FALSE)
-for(i in c(1:nrow(exon))){
-  if(exon[i,6] == 1){
-    if(i == 1){
-      if(exon[i,2] == exon[i+1,2]){
-        intron_list <- append(intron_list, exon[i,1])
-        intron_list <- append(intron_list, exon[i,2])
-        intron_list <- append(intron_list, exon[i,3])
-        intron_list <- append(intron_list, exon[i,6])
-        intron_list <- append(intron_list, exon[i,4])
-        intron_list <- append(intron_list, exon[i,5])
-      }
-    }
-    else if(i == nrow(exon)){
-      if(exon[i,2] == exon[i-1,2]){
-        intron_list <- append(intron_list, exon[i,4])
-        intron_list <- append(intron_list, exon[i,5])
-        intron_temp_1 <- intron_list[1:4]
-        intron_list <- intron_list[5:length(intron_list)]
-        for(j in c(1:(length(intron_list)/2-1))){
-          intron_temp_2 <- append(intron_temp_1, intron_list[j*2])
-          intron_temp_2 <- append(intron_temp_2, intron_list[j*2+1])
-          intron[nrow(intron) + 1,] <- intron_temp_2 
-          intron_temp_2 <- vector()
-        }
-        intron_list <- vector()
-      }
-    }
-    else{
-      if(exon[i,2] != exon[i-1,2] & exon[i,2] == exon[i+1,2]){
-        intron_list <- append(intron_list, exon[i,1])
-        intron_list <- append(intron_list, exon[i,2])
-        intron_list <- append(intron_list, exon[i,3])
-        intron_list <- append(intron_list, exon[i,6])
-        intron_list <- append(intron_list, exon[i,4])
-        intron_list <- append(intron_list, exon[i,5])
-      }
-      else if(exon[i,2] == exon[i-1,2] & exon[i,2] == exon[i+1,2]){
-        intron_list <- append(intron_list, exon[i,4])
-        intron_list <- append(intron_list, exon[i,5])
-      }
-      else if(exon[i,2] == exon[i-1,2] & exon[i,2] != exon[i+1,2]){
-        intron_list <- append(intron_list, exon[i,4])
-        intron_list <- append(intron_list, exon[i,5])
-        intron_temp_1 <- intron_list[1:4]
-        intron_list <- intron_list[5:length(intron_list)]
-        for(j in c(1:(length(intron_list)/2-1))){
-          intron_temp_2 <- vector()
-          intron_temp_2 <- append(intron_temp_1, intron_list[j*2])
-          intron_temp_2 <- append(intron_temp_2, intron_list[j*2+1])
-          intron[nrow(intron) + 1,] <- intron_temp_2 
-        }
-        intron_list <- vector()
-      }
-    }
-  }
-  else if(exon[i,6] == -1){
-    if(i == 1){
-      if(exon[i,2] == exon[i+1,2]){
-        intron_list <- append(intron_list, exon[i,1])
-        intron_list <- append(intron_list, exon[i,2])
-        intron_list <- append(intron_list, exon[i,3])
-        intron_list <- append(intron_list, exon[i,6])
-        intron_list <- append(intron_list, exon[i,4])
-        intron_list <- append(intron_list, exon[i,5])
-      }
-    }
-    else if(i == nrow(exon)){
-      if(exon[i,2] == exon[i-1,2]){
-        intron_list <- append(intron_list, exon[i,4], after = 4)
-        intron_list <- append(intron_list, exon[i,5], after = 5)
-        intron_temp_1 <- intron_list[1:4]
-        intron_list <- intron_list[5:length(intron_list)]
-        for(j in c(1:(length(intron_list)/2-1))){
-          intron_temp_2 <- vector()
-          intron_temp_2 <- append(intron_temp_1, intron_list[j*2])
-          intron_temp_2 <- append(intron_temp_2, intron_list[j*2+1])
-          intron[nrow(intron) + 1,] <- intron_temp_2 
-        }
-        intron_list <- vector()
-      }
-    }
-    else{
-      if(exon[i,2] != exon[i-1,2] & exon[i,2] == exon[i+1,2]){
-        intron_list <- append(intron_list, exon[i,1])
-        intron_list <- append(intron_list, exon[i,2])
-        intron_list <- append(intron_list, exon[i,3])
-        intron_list <- append(intron_list, exon[i,6])
-        intron_list <- append(intron_list, exon[i,4])
-        intron_list <- append(intron_list, exon[i,5])
-      }
-      else if(exon[i,2] == exon[i-1,2] & exon[i,2] == exon[i+1,2]){
-        intron_list <- append(intron_list, exon[i,4], after = 4)
-        intron_list <- append(intron_list, exon[i,5], after = 5)
-      }
-      else if(exon[i,2] == exon[i-1,2] & exon[i,2] != exon[i+1,2]){
-        intron_list <- append(intron_list, exon[i,4], after = 4)
-        intron_list <- append(intron_list, exon[i,5], after = 5)
-        intron_temp_1 <- intron_list[1:4]
-        intron_list <- intron_list[5:length(intron_list)]
-        for(j in c(1:(length(intron_list)/2-1))){
-          intron_temp_2 <- vector()
-          intron_temp_2 <- append(intron_temp_1, intron_list[j*2])
-          intron_temp_2 <- append(intron_temp_2, intron_list[j*2+1])
-          intron[nrow(intron) + 1,] <- intron_temp_2 
-        }
-        intron_list <- vector()
-      }
-    }
-  }
-}
-colnames(intron) <- intron[1,]
-intron <- intron[c(2:nrow(intron)),]
-intron$intron_chrom_start <- as.numeric(intron$intron_chrom_start)
-intron$intron_chrom_end <- as.numeric(intron$intron_chrom_end)
-intron$chromosome_name <- as.numeric(intron$chromosome_name)
-intron$strand <- as.numeric(intron$strand)
-
-# peaks in intron regions
-intron_regions <- GRanges(seqnames = Rle(paste0("chr", intron$chromosome_name)),
-                          ranges = IRanges(start = intron$intron_chrom_start, end = intron$intron_chrom_end),
-                          srtand = Rle(rep("*", nrow(intron))),
-                          gene = intron$external_gene_name)
-for(name in read_list){
-  intron_peak_sum <- sum(countOverlaps(intron_regions, eval(parse(text = name))))
-  print(paste(name, "has", intron_peak_sum, "in intron regions", sep = " "))
-}
-
-# peaks in certain gene intron with normalization
-peaks_in_gene_intron <- function(gene_name){
-  index_list <- which(intron$external_gene_name == gene_name)
-  assign(gene_name, GRanges(seqnames = Rle(paste0("chr", intron[index_list,3])),
-                            ranges = IRanges(start = intron[index_list,5], end = intron[index_list,6]),
-                            strand = Rle("*",length(index_list)), 
-                            gene = intron[index_list,2]))
-  for(name in read_list){
-    index <- match(name, read_list)
-    peak_sum <- sum(countOverlaps(eval(parse(text = gene_name)), eval(parse(text = name)))) / fold_list[index]
-    print(paste(name, "has", peak_sum, "peaks in", gene_name, "intron regions", sep = " "))
-  }
-}
-peaks_in_gene_intron("")
-
 # 5' UTR isolation and setting
-utr_5 <- getBM(attributes = c("ensembl_gene_id","external_gene_name",
+utr_5 <- na.omit(getBM(attributes = c("ensembl_gene_id","external_gene_name",
                             "chromosome_name", "5_utr_start",
                             "5_utr_end", "strand"), mart = ds,
                             filter = "chromosome_name", 
-                            values = strsplit(chromosome, split = "r")[[1]][2])
-utr_5 <- na.omit(utr_5)
+                            values = strsplit(chromosome, split = "r")[[1]][2]))
 utr_5_regions <- GRanges(seqnames = Rle(paste0("chr", utr_5$chromosome_name)),
                          ranges = IRanges(start = utr_5$'5_utr_start', end = utr_5$'5_utr_end'),
                          strand = Rle(rep("*", nrow(utr_5))),
@@ -446,10 +328,82 @@ utr_5_regions <- GRanges(seqnames = Rle(paste0("chr", utr_5$chromosome_name)),
 utr_5_total_length <- sum(width(reduce(utr_5_regions)))
 pos_utr_5 <- utr_5[unique(queryHits(findOverlaps(utr_5_regions, enriched_regions))),]
 
-# peaks in 5' UTR regions
+# 5' UTR extend
+utr_5_extend <- data.frame("external_gene_name", "start", "end", stringsAsFactors = FALSE)
+for(name in unique(utr_5$external_gene_name)){
+  name_index_list <- which(utr_5$external_gene_name == name)
+  name_temp <- utr_5[name_index_list,]
+  name_temp <- name_temp[order(name_temp$"5_utr_start"),]
+  for(i in c(1, length(name_index_list))){
+    if(i == 1){
+      start <- name_temp[i,]$"5_utr_start"
+      end <- name_temp[i,]$"5_utr_end"
+      utr_5_list <- c(start, end)
+    }
+    else{
+      if(name_temp[i,]$"5_utr_start" <= start){
+        if(name_temp[i,]$"5_utr_end" >= end){
+          start <- name_temp[i,]$"5_utr_start"
+          end <- name_temp[i,]$"5_utr_end"
+          utr_5_list <- c(start, end)
+        }
+        else{
+          start <- name_temp[i,]$"5_utr_start"
+          utr_5_list[1] <- start
+        }
+      }
+      else{
+        if(name_temp[i,]$"5_utr_end" >= end){
+          start <- name_temp[i,]$"5_utr_start"
+          end <- name_temp[i,]$"5_utr_end"
+          utr_5_list[2] <- end
+        }
+      }
+    }
+  }
+  utr_5_extend[nrow(utr_5_extend)+1,] <- c(name, utr_5_list)
+}
+colnames(utr_5_extend) <- utr_5_extend[1,]
+utr_5_extend <- utr_5_extend[c(2:nrow(utr_5_extend)),]
+utr_5_extend$start <- as.numeric(utr_5_extend$start)
+utr_5_extend$end <- as.numeric(utr_5_extend$end)
+utr_5_extend_regions <- GRanges(seqnames = Rle(chromosome),
+                                ranges = IRanges(start = utr_5_extend$start, 
+                                                 end = utr_5_extend$end),
+                                strand = Rle("*", nrow(utr_5_extend)),
+                                gene = Rle(utr_5_extend$external_gene_name))
+
+# 5' UTR overlap
+utr_5_overlap <- data.frame("chromosome_name", "start", "end", stringsAsFactors = FALSE)
+utr_5_extend <- utr_5_extend[order(utr_5_extend$start),]
+for(i in c(1:nrow(utr_5_extend))){
+  if(i == 1){
+    start <- utr_5_extend[i,]$start
+    end <- utr_5_extend[i,]$end
+    utr_5_overlap_list <- c(start, end)
+  }
+  else{
+    if(utr_5_extend[i,]$start > end){
+      start <- utr_5_extend[i,]$start
+      end <- utr_5_extend[i,]$end
+      utr_5_overlap_list <- append(utr_5_overlap_list, c(start, end))
+    }
+    else{
+      if(utr_5_extend[i,]$end >= end){
+        end <- utr_5_extend[i,]$end
+        utr_5_overlap_list[length(utr_5_overlap_list)] <- end
+      }
+    }
+  }
+}
+for(i in c(1:(length(utr_5_overlap_list)/2))){
+  utr_5_overlap[nrow(utr_5_overlap)+1,] <- c(chromosome, utr_5_overlap_list[i*2-1], utr_5_overlap_list[i*2])
+}
+
+# peaks in 5' UTR extend regions
 for(name in read_list){
-  utr_5_peak_sum <- sum(countOverlaps(utr_5_regions, eval(parse(text = name))))
-  print(paste(name, "has", utr_5_peak_sum, "peaks in 5' UTR regions", sep = " "))
+  utr_5_peak_sum <- sum(countOverlaps(utr_5_extend_regions, eval(parse(text = name))))
+  print(paste(name, "has", utr_5_peak_sum, "peaks in 5' UTR extend regions", sep = " "))
 }
 
 # 3' UTR isolation and setting
@@ -466,24 +420,70 @@ utr_3_regions <- GRanges(seqnames = Rle(paste0("chr", utr_3$chromosome_name)),
 utr_3_total_length <- sum(width(reduce(utr_3_regions)))
 pos_utr_3 <- utr_5[unique(queryHits(findOverlaps(utr_3_regions, enriched_regions))),]
 
-# peaks in 3' UTR regions
+# 3' UTR extend
+utr_3_extend <- data.frame("external_gene_name", "start", "end", stringsAsFactors = FALSE)
+for(name in unique(utr_3$external_gene_name)){
+  name_index_list <- which(utr_3$external_gene_name == name)
+  name_temp <- utr_3[name_index_list,]
+  name_temp <- name_temp[order(name_temp$"3_utr_start"),]
+  for(i in c(1, length(name_index_list))){
+    if(i == 1){
+      start <- name_temp[i,]$"3_utr_start"
+      end <- name_temp[i,]$"3_utr_end"
+      utr_3_list <- c(start, end)
+    }
+    else{
+      if(name_temp[i,]$"3_utr_start" <= start){
+        if(name_temp[i,]$"3_utr_end" >= end){
+          start <- name_temp[i,]$"3_utr_start"
+          end <- name_temp[i,]$"3_utr_end"
+          utr_3_list <- c(start, end)
+        }
+        else{
+          start <- name_temp[i,]$"3_utr_start"
+          utr_3_list[1] <- start
+        }
+      }
+      else{
+        if(name_temp[i,]$"3_utr_end" >= end){
+          start <- name_temp[i,]$"3_utr_start"
+          end <- name_temp[i,]$"3_utr_end"
+          utr_3_list[2] <- end
+        }
+      }
+    }
+  }
+  utr_3_extend[nrow(utr_3_extend)+1,] <- c(name, utr_3_list)
+}
+colnames(utr_3_extend) <- utr_3_extend[1,]
+utr_3_extend <- utr_3_extend[c(2:nrow(utr_3_extend)),]
+utr_3_extend$start <- as.numeric(utr_3_extend$start)
+utr_3_extend$end <- as.numeric(utr_3_extend$end)
+utr_3_extend_regions <- GRanges(seqnames = Rle(chromosome),
+                                ranges = IRanges(start = utr_3_extend$start, 
+                                                 end = utr_3_extend$end),
+                                strand = Rle("*", nrow(utr_3_extend)),
+                                gene = Rle(utr_3_extend$external_gene_name))
+
+# peaks in 3' extend UTR regions
 for(name in read_list){
-  utr_3_peak_sum <- sum(countOverlaps(utr_3_regions, eval(parse(text = name))))
-  print(paste(name, "has", utr_3_peak_sum, "peaks in 3' UTR regions", sep = " "))
+  utr_3_peak_sum <- sum(countOverlaps(utr_3_extend_regions, eval(parse(text = name))))
+  print(paste(name, "has", utr_3_peak_sum, "peaks in 3' UTR extend regions", sep = " "))
 }
 
 # intragenic regions isolation (gene distance > 200kb)
+egs <- egs[order(egs$start_position),]
 gd_list <- c(1)
 for(i in c(1:nrow(egs))){
   if(i == 1){
-    start <- egs[i,4]-100000
-    end <- egs[i,5]+100000
+    start <- egs[i,]$start_position-100000
+    end <- egs[i,]$end_position+100000
     gd_list <- append(gd_list, c(start, end))
   }
   else{
-    if(egs[i,4] - end > 200000){
-      start <- egs[i,4]-100000
-      end <- egs[i,5]+100000
+    if(egs[i,]$start_position - end > 200000){
+      start <- egs[i,]$start_position-100000
+      end <- egs[i,]$end_position+100000
       gd_list <- append(gd_list, c(start, end))
     }
   }
