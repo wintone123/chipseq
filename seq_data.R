@@ -4,11 +4,11 @@ library(rtracklayer)
 library(IRanges)
 library(chipseq)
 library(biomaRt)
-library(BSgenome.Mmusculus.UCSC.mm9)  # human (BSgenome.Hsapiens.UCSC.hg38)
+library(BSgenome.Mmusculus.UCSC.mm10)  # human (BSgenome.Hsapiens.UCSC.hg38)
 library(Gviz)
 
 # si for mm9 
-genome <- BSgenome.Mmusculus.UCSC.mm9  # human (BSgenome.Hsapiens.UCSC.hg38)
+genome <- BSgenome.Mmusculus.UCSC.mm10  # human (BSgenome.Hsapiens.UCSC.hg38)
 si <- seqinfo(genome)
 si <- si[paste0('chr', c(1:19, 'X', 'Y'))]
 

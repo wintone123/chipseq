@@ -4,11 +4,11 @@ library(rtracklayer)
 library(IRanges)
 library(biomaRt)
 library(chipseq)
-library(BSgenome.Mmusculus.UCSC.mm9)  # human (BSgenome.Hsapiens.UCSC.hg38)
+library(BSgenome.Mmusculus.UCSC.mm10)  # human (BSgenome.Hsapiens.UCSC.hg38)
 library(Gviz)
 
 # si for mm9 
-genome <- BSgenome.Mmusculus.UCSC.mm9  # human (BSgenome.Hsapiens.UCSC.hg38)
+genome <- BSgenome.Mmusculus.UCSC.mm10  # human (BSgenome.Hsapiens.UCSC.hg38)
 
 # load interestined chromosome and position (mouse mm9 genome)
 chromosome <- "chr6"  # chromosome (chr 1~19 or X, Y)
@@ -48,7 +48,6 @@ export[nrow(export)+1,] <- export_temp
 rownames(export)[nrow(export)] <- "total peaks"
 
 # egs isolation
-listAttributes(mart)[c(1:5),]
 ds <- useDataset("mmusculus_gene_ensembl", mart = mart)  # human (hsapiens_gene_ensembl)
 egs <- getBM(attributes = c("ensembl_gene_id","external_gene_name",
                             "chromosome_name", "start_position",
@@ -525,26 +524,30 @@ for(name in read_list){
 export[nrow(export)+1,] <- export_temp
 rownames(export)[nrow(export)] <- "3' UTR overlap regions"
 
-# intragenic regions isolation (gene distance > 200kb)
-egs <- egs[order(egs$start_position),]
+# intragenic regions isolation from egs overlap (gene distance > 200kb)
+egs_overlap <- egs_overlap[order(egs_overlap$start),]
 gd_list <- c(1)
-for(i in c(1:nrow(egs))){
+for(i in c(1:nrow(egs_overlap))){
   if(i == 1){
-    start <- egs[i,]$start_position-100000
-    end <- egs[i,]$end_position+100000
+    start <- egs_overlap[i,]$star-100000
+    end <- egs_overlap[i,]$end+100000
     gd_list <- append(gd_list, c(start, end))
   }
   else{
-    if(egs[i,]$start_position - end > 200000){
-      start <- egs[i,]$start_position-100000
-      end <- egs[i,]$end_position+100000
+    if(egs_overlap[i,]$start - end > 200000){
+      start <- egs_overlap[i,]$start-100000
+      end <- egs_overlap[i,]$end+100000
       gd_list <- append(gd_list, c(start, end))
+    }
+    else{
+      end <- egs_overlap[i,]$end+100000
+      gd_list[length(gd_list)] <- end
     }
   }
 }
 gd_list <- append(gd_list, seqlengths(genome)[as.numeric(strsplit(chromosome, split = "r")[[1]][2])])
 gd_temp <- data.frame("chromosome_name", "gd_start", "gd_end", stringsAsFactors=FALSE)
-for(i in c(1:(length(gd_list)/2))){
+for(i in c(ifelse(gd_list[2] - gd_list[1] > 100000, 1, 2):ifelse(gd_list[length(gd_list)] - gd_list[length(gd_list)-1] > 100000, length(gd_list)/2, length(gd_list)/2-1))){
   gd_temp[nrow(gd_temp)+1,] <- c(chromosome, gd_list[i*2-1], gd_list[i*2])
 }
 colnames(gd_temp) <- gd_temp[1,]
