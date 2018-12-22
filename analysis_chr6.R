@@ -76,14 +76,12 @@ for(i in c(1: nrow(egs))){
     start <- egs[i,]$start_position
     end <- egs[i,]$end_position
     egs_overlap_list <- c(start, end)
-  }
-  else{
+  } else{
     if(egs[i,]$start_position > end){
       start <- egs[i,]$start_position
       end <- egs[i,]$end_position
       egs_overlap_list <- append(egs_overlap_list, c(start, end))
-    }
-    else{
+    } else{
       if(egs[i,]$end_position >= end){
         end <- egs[i,]$end_position
         egs_overlap_list[length(egs_overlap_list)] <- end
@@ -119,7 +117,6 @@ promoter_regions <- GRanges(seqnames = Rle(paste0("chr", egs$chromosome_name)),
                             ranges = IRanges(start = egs$TSS - 200, end = egs$TSS + 200),
                             strand = Rle(rep("*", nrow(egs))),
                             gene = egs$external_gene_name)
-promoter_total_length <- sum(width(reduce(promoter_regions)))
 
 # peaks in promoter regions (+/- 200 bp around TSS)
 export_temp <- vector()
@@ -164,14 +161,12 @@ for(name in unique(exon$external_gene_name)){
       start <- name_temp[i,4]
       end <- name_temp[i,5]
       exon_extend_list <- c(start, end)
-    }
-    else{
+    } else{
       if(name_temp[i,4] > end){
         start <- name_temp[i,4]
         end <- name_temp[i,5]
         exon_extend_list <- append(exon_extend_list, c(start, end))
-      }
-      else{
+      } else{
         if(name_temp[i,5] >= end){
           end <- name_temp[i,5]
           exon_extend_list[length(exon_extend_list)] <- end
@@ -194,7 +189,7 @@ exon_extend$exon_start <- as.numeric(exon_extend$exon_start)
 exon_extend$exon_end <- as.numeric(exon_extend$exon_end)
 exon_extend_regions <- GRanges(seqnames = Rle(chromosome),
                                 ranges = IRanges(start = exon_extend$exon_start, end = exon_extend$exon_end),
-                                strand = Rle("*"))
+                                strand = Rle(rep("*", nrow(intron_from_exon_extend))))
 colnames(intron_from_exon_extend) <- intron_from_exon_extend[1,]
 intron_from_exon_extend <- intron_from_exon_extend[c(2:nrow(intron_from_exon_extend)),]
 intron_from_exon_extend$intron_start <- as.numeric(intron_from_exon_extend$intron_start)
@@ -202,7 +197,7 @@ intron_from_exon_extend$intron_end <- as.numeric(intron_from_exon_extend$intron_
 intron_from_exon_extend_regions <- GRanges(seqnames = Rle(chromosome),
                                     ranges = IRanges(start = intron_from_exon_extend$intron_start, 
                                                      end = intron_from_exon_extend$intron_end),
-                                    strand = Rle("*"))
+                                    strand = Rle(rep("*", nrow(intron_from_exon_extend))))
 
 # peaks in extend gene exon regions
 export_temp <- vector()
@@ -242,15 +237,13 @@ for(name in unique(exon$external_gene_name)){
         start <- name_temp[i,4]
         end <- name_temp[i,5]
         intron_extend_list <- append(intron_extend_list, c(start, end))
-      }
-      else{
+      } else{
         if(name_temp[i,5] <= end){
           start <- name_temp[i,4]
           end <- name_temp[i,5]
           intron_extend_list[length(intron_extend_list)-1] <- start
           intron_extend_list[length(intron_extend_list)] <- end
-        }
-        else{
+        } else{
           start <- name_temp[i,4]
           intron_extend_list[length(intron_extend_list)-1] <- start
         }
@@ -272,7 +265,7 @@ intron_extend$intron_start <- as.numeric(intron_extend$intron_start)
 intron_extend$intron_end <- as.numeric(intron_extend$intron_end)
 intron_extend_regions <- GRanges(seqnames = Rle(chromosome),
                                 ranges = IRanges(start = intron_extend$intron_start, end = intron_extend$intron_end),
-                                strand = Rle("*", nrow(intron_extend)))
+                                strand = Rle("*"))
 colnames(exon_from_intron_extend) <- exon_from_intron_extend[1,]
 exon_from_intron_extend <- exon_from_intron_extend[c(2:nrow(exon_from_intron_extend)),]
 exon_from_intron_extend$exon_start <- as.numeric(exon_from_intron_extend$exon_start)
@@ -280,7 +273,7 @@ exon_from_intron_extend$exon_end <- as.numeric(exon_from_intron_extend$exon_end)
 exon_from_intron_extend_regions <- GRanges(seqnames = Rle(chromosome),
                                     ranges = IRanges(start = exon_from_intron_extend$exon_start, 
                                                      end = exon_from_intron_extend$exon_end),
-                                    strand = Rle("*", nrow(exon_from_intron_extend)))
+                                    strand = Rle("*"))
 
 # peaks in gene intron extend regions 
 export_temp <- vector()
@@ -308,9 +301,9 @@ utr_5 <- na.omit(getBM(attributes = c("ensembl_gene_id","external_gene_name",
                             "5_utr_end", "strand"), mart = ds,
                             filter = "chromosome_name", 
                             values = strsplit(chromosome, split = "r")[[1]][2]))
-utr_5_regions <- GRanges(seqnames = Rle(paste0("chr", utr_5$chromosome_name)),
+utr_5_regions <- GRanges(seqnames = Rle(chromosome),
                          ranges = IRanges(start = utr_5$'5_utr_start', end = utr_5$'5_utr_end'),
-                         strand = Rle(rep("*", nrow(utr_5))),
+                         strand = Rle("*"),
                          gene = utr_5$external_gene_name)
 
 # 5' UTR extend
@@ -324,20 +317,17 @@ for(name in unique(utr_5$external_gene_name)){
       start <- name_temp[i,]$"5_utr_start"
       end <- name_temp[i,]$"5_utr_end"
       utr_5_list <- c(start, end)
-    }
-    else{
+    } else{
       if(name_temp[i,]$"5_utr_start" <= start){
         if(name_temp[i,]$"5_utr_end" >= end){
           start <- name_temp[i,]$"5_utr_start"
           end <- name_temp[i,]$"5_utr_end"
           utr_5_list <- c(start, end)
-        }
-        else{
+        } else{
           start <- name_temp[i,]$"5_utr_start"
           utr_5_list[1] <- start
         }
-      }
-      else{
+      } else{
         if(name_temp[i,]$"5_utr_end" >= end){
           start <- name_temp[i,]$"5_utr_start"
           end <- name_temp[i,]$"5_utr_end"
@@ -355,7 +345,7 @@ utr_5_extend$end <- as.numeric(utr_5_extend$end)
 utr_5_extend_regions <- GRanges(seqnames = Rle(chromosome),
                                 ranges = IRanges(start = utr_5_extend$start, 
                                                  end = utr_5_extend$end),
-                                strand = Rle("*", nrow(utr_5_extend)),
+                                strand = Rle("*"),
                                 gene = Rle(utr_5_extend$external_gene_name))
 
 # peaks in 5' UTR extend regions
@@ -376,14 +366,12 @@ for(i in c(1:nrow(utr_5_extend))){
     start <- utr_5_extend[i,]$start
     end <- utr_5_extend[i,]$end
     utr_5_overlap_list <- c(start, end)
-  }
-  else{
+  } else{
     if(utr_5_extend[i,]$start > end){
       start <- utr_5_extend[i,]$start
       end <- utr_5_extend[i,]$end
       utr_5_overlap_list <- append(utr_5_overlap_list, c(start, end))
-    }
-    else{
+    } else{
       if(utr_5_extend[i,]$end >= end){
         end <- utr_5_extend[i,]$end
         utr_5_overlap_list[length(utr_5_overlap_list)] <- end
@@ -401,7 +389,7 @@ utr_5_overlap$end <- as.numeric(utr_5_overlap$end)
 utr_5_overlap_regions <- GRanges(seqnames = Rle(chromosome),
                                 ranges = IRanges(start = utr_5_overlap$start, 
                                                  end = utr_5_overlap$end),
-                                strand = Rle("*", nrow(utr_5_overlap)))
+                                strand = Rle("*"))
 
 # peaks in 5' UTR overlap regions
 export_temp <- vector()
@@ -419,9 +407,9 @@ utr_3 <- na.omit(getBM(attributes = c("ensembl_gene_id","external_gene_name",
                               "3_utr_end", "strand"), mart = ds,
                               filter = "chromosome_name", 
                               values = strsplit(chromosome, split = "r")[[1]][2]))
-utr_3_regions <- GRanges(seqnames = Rle(paste0("chr", utr_3$chromosome_name)),
+utr_3_regions <- GRanges(seqnames = Rle(chromosome),
                          ranges = IRanges(start = utr_3$'3_utr_start', end = utr_3$'3_utr_end'),
-                         strand = Rle(rep("*", nrow(utr_3))),
+                         strand = Rle("*"),
                          gene = utr_3$external_gene_name)
 
 # 3' UTR extend
@@ -435,20 +423,17 @@ for(name in unique(utr_3$external_gene_name)){
       start <- name_temp[i,]$"3_utr_start"
       end <- name_temp[i,]$"3_utr_end"
       utr_3_list <- c(start, end)
-    }
-    else{
+    } else{
       if(name_temp[i,]$"3_utr_start" <= start){
         if(name_temp[i,]$"3_utr_end" >= end){
           start <- name_temp[i,]$"3_utr_start"
           end <- name_temp[i,]$"3_utr_end"
           utr_3_list <- c(start, end)
-        }
-        else{
+        } else{
           start <- name_temp[i,]$"3_utr_start"
           utr_3_list[1] <- start
         }
-      }
-      else{
+      } else{
         if(name_temp[i,]$"3_utr_end" >= end){
           start <- name_temp[i,]$"3_utr_start"
           end <- name_temp[i,]$"3_utr_end"
@@ -466,7 +451,7 @@ utr_3_extend$end <- as.numeric(utr_3_extend$end)
 utr_3_extend_regions <- GRanges(seqnames = Rle(chromosome),
                                 ranges = IRanges(start = utr_3_extend$start, 
                                                  end = utr_3_extend$end),
-                                strand = Rle("*", nrow(utr_3_extend)),
+                                strand = Rle("*"),
                                 gene = Rle(utr_3_extend$external_gene_name))
 
 # peaks in 3' extend UTR regions
@@ -487,14 +472,12 @@ for(i in c(1:nrow(utr_3_extend))){
     start <- utr_3_extend[i,]$start
     end <- utr_3_extend[i,]$end
     utr_3_overlap_list <- c(start, end)
-  }
-  else{
+  } else{
     if(utr_3_extend[i,]$start > end){
       start <- utr_3_extend[i,]$start
       end <- utr_3_extend[i,]$end
       utr_3_overlap_list <- append(utr_3_overlap_list, c(start, end))
-    }
-    else{
+    } else{
       if(utr_3_extend[i,]$end >= end){
         end <- utr_3_extend[i,]$end
         utr_3_overlap_list[length(utr_3_overlap_list)] <- end
@@ -512,7 +495,7 @@ utr_3_overlap$end <- as.numeric(utr_3_overlap$end)
 utr_3_overlap_regions <- GRanges(seqnames = Rle(chromosome),
                                 ranges = IRanges(start = utr_3_overlap$start, 
                                                  end = utr_3_overlap$end),
-                                strand = Rle("*", nrow(utr_3_overlap)))
+                                strand = Rle("*"))
 
 # peaks in 3' overlap UTR regions
 export_temp <- vector()
@@ -538,8 +521,7 @@ for(i in c(1:nrow(egs_overlap))){
       start <- egs_overlap[i,]$start-100000
       end <- egs_overlap[i,]$end+100000
       gd_list <- append(gd_list, c(start, end))
-    }
-    else{
+    } else{
       end <- egs_overlap[i,]$end+100000
       gd_list[length(gd_list)] <- end
     }
@@ -554,7 +536,7 @@ colnames(gd_temp) <- gd_temp[1,]
 gd_temp <- gd_temp[c(2:nrow(gd_temp)),]
 gd_temp$gd_start <- as.numeric(gd_temp$gd_start)
 gd_temp$gd_end <- as.numeric(gd_temp$gd_end)
-gd_regions <- GRanges(seqnames = Rle(gd_temp$chromosome_name), 
+gd_regions <- GRanges(seqnames = Rle(chromosome), 
                       ranges = IRanges(start = gd_temp$gd_start, end = gd_temp$gd_end))
 
 # peaks in intragenic regions (gene distance > 200kb)
