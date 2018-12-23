@@ -17,28 +17,27 @@ prepareChipseq <- function(reads){
   reads_extended = resize(reads, width = frag_len)
   return(trim(reads_extended))
 }
-path <- "/mnt/c/chipseq/test2/split_files"  # input file path
-load_list <- list.files(path)
+path <- "/mnt/c/chipseq/test2"  # input file path
+load_list <- list.files(file.path(path, "split_files"))
+load_list <- load_list[which(load_list != "output")]
 dir.create(file.path(path,"output"), showWarnings = FALSE)  # create output folder
 
 # genome_list
-genome_list <- c(1:19, "X","Y")
+genome_list <- c(10:19, "X","Y")
 print("=============Let's Go!=============")
 # analysis process
 for(chrom_1 in genome_list){
   chrom <- paste0("chr", chrom_1)
   print("============Loop Start!============")
-
   # load file
   read_list <- vector()
   for(file_name in load_list){
-    if(strsplit(file_name, split = "_", fixed = TRUE)[[1]][3] == paste0(chrom, ".bed"))
+    if(strsplit(file_name, split = "_", fixed = TRUE)[[1]][3] == paste0(chrom, ".bed")){
       base_name <- strsplit(file_name, split = ".", fixed = TRUE)[[1]][1]
-      assign(base_name, prepareChipseq(import.bed(file.path(path, file_name))))
+      assign(base_name, prepareChipseq(import.bed(file.path(path, "split_files", file_name))))
       read_list <- c(read_list, base_name)
     }
   }
-
   # create data export file (1)
   colname <- vector()
   export <- promoter_peaks_export <- data.frame(t(unlist(read_list)), stringsAsFactors = FALSE)
@@ -50,7 +49,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "total peaks"
   print("+++++++++++++++++++++++++++++++++++")
-
   # egs isolation
   ds <- useDataset("mmusculus_gene_ensembl", mart = mart)  
   egs <- getBM(attributes = c("ensembl_gene_id","external_gene_name",
@@ -62,7 +60,6 @@ for(chrom_1 in genome_list){
                          ranges = IRanges(start = egs$start_position, end = egs$end_position),
                          strand = Rle("*"),
                          gene = egs$external_gene_name)
-
   # peaks in egs regions
   export_temp <- vector()
   for(name in read_list){
@@ -73,7 +70,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "egs regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # egs overlapping regions
   egs_overlap <- data.frame("chromosome_name","start","end", stringsAsFactors=FALSE)
   egs <- egs[order(egs$start_position),]
@@ -105,7 +101,6 @@ for(chrom_1 in genome_list){
   egs_overlap_regions <- GRanges(seqnames = Rle(chrom),
                                 ranges = IRanges(start = egs_overlap$start, end = egs_overlap$end),
                                 strand = Rle("*"))
-
   # peaks in egs overlapp regions
   export_temp <- vector()
   for(name in read_list){
@@ -116,14 +111,12 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "egs overlap regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # set promoter (+/- 200 bp around TSS)
   egs$TSS <- ifelse(egs$strand == "1", egs$start_position, egs$end_position)
   promoter_regions <- GRanges(seqnames = Rle(chrom),
                               ranges = IRanges(start = egs$TSS - 200, end = egs$TSS + 200),
                               strand = Rle("*"),
-                              gene = egs$external_gene_name)
-  
+                              gene = egs$external_gene_name)  
   # peaks in promoter regions (+/- 200 bp around TSS)
   export_temp <- vector()
   for(name in read_list){
@@ -134,7 +127,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "promoter regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # exon isolation
   exon <- getBM(attributes = c("ensembl_gene_id","external_gene_name",
                                "chromosome_name", "exon_chrom_start",
@@ -145,7 +137,6 @@ for(chrom_1 in genome_list){
                           ranges = IRanges(start = exon$exon_chrom_start, end = exon$exon_chrom_end),
                           srtand = Rle("*"),
                           gene = exon$external_gene_name)
-
   # peaks in exon regions
   export_temp <- vector()
   for(name in read_list){
@@ -156,7 +147,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "exon regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # exon extend regions and intron from exon extend regions
   exon_extend <- data.frame("external_gene_name", "exon_start", "exon_end", stringsAsFactors = FALSE)
   intron_from_exon_extend <- data.frame("external_gene_name", "intron_start", "intron_end", stringsAsFactors = FALSE)
@@ -206,7 +196,6 @@ for(chrom_1 in genome_list){
                                              ranges = IRanges(start = intron_from_exon_extend$intron_start, 
                                              end = intron_from_exon_extend$intron_end),
                                              strand = Rle("*"))
-
   # peaks in extend gene exon regions
   export_temp <- vector()
   for(name in read_list){
@@ -217,7 +206,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "exon extend regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # peaks in gene intron regions from extend exon
   export_temp <- vector()
   for(name in read_list){
@@ -228,7 +216,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "intron from exon extend regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # intron extend regions and exon from intron extend regions
   intron_extend <- data.frame("external_gene_name", "intron_start", "intron_end", stringsAsFactors = FALSE)
   exon_from_intron_extend <- data.frame("external_gene_name", "exon_start", "exon_end", stringsAsFactors = FALSE)
@@ -241,14 +228,12 @@ for(chrom_1 in genome_list){
         start <- name_temp[i,4]
         end <- name_temp[i,5]
         intron_extend_list <- c(start, end)
-      }
-      else{
+      } else{
         if(name_temp[i,4] > end){
           start <- name_temp[i,4]
           end <- name_temp[i,5]
           intron_extend_list <- append(intron_extend_list, c(start, end))
-        }
-        else{
+        } else{
           if(name_temp[i,5] <= end){
             start <- name_temp[i,4]
             end <- name_temp[i,5]
@@ -286,7 +271,6 @@ for(chrom_1 in genome_list){
                                       ranges = IRanges(start = exon_from_intron_extend$exon_start, 
                                                        end = exon_from_intron_extend$exon_end),
                                       strand = Rle("*"))
-
   # peaks in gene intron extend regions 
   export_temp <- vector()
   for(name in read_list){
@@ -297,7 +281,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "intron extend regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # peaks in gene exon regions from intron extend
   export_temp <- vector()
   for(name in read_list){
@@ -308,14 +291,12 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "exon from intron extend regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # 5' UTR isolation and setting
   utr_5 <- na.omit(getBM(attributes = c("ensembl_gene_id","external_gene_name",
                                         "chromosome_name", "5_utr_start",
                                         "5_utr_end", "strand"), mart = ds,
                                         filter = "chromosome_name", 
                                         values = chrom_1))
-
   # 5' UTR extend
   utr_5_extend <- data.frame("external_gene_name", "start", "end", stringsAsFactors = FALSE)
   for(name in unique(utr_5$external_gene_name)){
@@ -357,7 +338,6 @@ for(chrom_1 in genome_list){
                                                    end = utr_5_extend$end),
                                   strand = Rle("*"),
                                   gene = Rle(utr_5_extend$external_gene_name))
-
   # peaks in 5' UTR extend regions
   export_temp <- vector()
   for(name in read_list){
@@ -368,7 +348,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "5' UTR extend regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # 5' UTR overlap
   utr_5_overlap <- data.frame("chromosome_name", "start", "end", stringsAsFactors = FALSE)
   utr_5_extend <- utr_5_extend[order(utr_5_extend$start),]
@@ -401,7 +380,6 @@ for(chrom_1 in genome_list){
                                    ranges = IRanges(start = utr_5_overlap$start, 
                                                     end = utr_5_overlap$end),
                                    strand = Rle("*"))
-
   # peaks in 5' UTR overlap regions
   export_temp <- vector()
   for(name in read_list){
@@ -412,14 +390,12 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "5' UTR overlap regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # 3' UTR isolation and setting
   utr_3 <- na.omit(getBM(attributes = c("ensembl_gene_id","external_gene_name",
                                 "chromosome_name", "3_utr_start",
                                 "3_utr_end", "strand"), mart = ds,
                                 filter = "chromosome_name", 
                                 values = chrom_1))
-
   # 3' UTR extend
   utr_3_extend <- data.frame("external_gene_name", "start", "end", stringsAsFactors = FALSE)
   for(name in unique(utr_3$external_gene_name)){
@@ -460,8 +436,7 @@ for(chrom_1 in genome_list){
                                   ranges = IRanges(start = utr_3_extend$start, 
                                                    end = utr_3_extend$end),
                                   strand = Rle("*"),
-                                  gene = Rle(utr_3_extend$external_gene_name))
-  
+                                  gene = Rle(utr_3_extend$external_gene_name))  
   # peaks in 3' extend UTR regions
   export_temp <- vector()
   for(name in read_list){
@@ -472,7 +447,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "3' UTR extend regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # 3' UTR overlap
   utr_3_overlap <- data.frame("chromosome_name", "start", "end", stringsAsFactors = FALSE)
   utr_3_extend <- utr_3_extend[order(utr_3_extend$start),]
@@ -505,7 +479,6 @@ for(chrom_1 in genome_list){
                                    ranges = IRanges(start = utr_3_overlap$start, 
                                                     end = utr_3_overlap$end),
                                    strand = Rle("*"))
-
   # peaks in 3' overlap UTR regions
   export_temp <- vector()
   for(name in read_list){
@@ -516,7 +489,6 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "3' UTR overlap regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # intragenic regions isolation from egs overlap (gene distance > 200kb)
   egs_overlap <- egs_overlap[order(egs_overlap$start),]
   gd_list <- c(1)
@@ -575,13 +547,11 @@ for(chrom_1 in genome_list){
   export[nrow(export)+1,] <- export_temp
   rownames(export)[nrow(export)] <- "intragenic regions"
   print("+++++++++++++++++++++++++++++++++++")
-
   # create data export file (2)
   colnames(export) <- export[1,]
   export <- export[c(2:nrow(export)),]
   write.csv(export, paste0(path, "/output/", chrom, "_export.csv"))
   print(paste0(path, "/output/", chrom, "_export.csv"))
-
   # remove files
   for(name in read_list){
     remove(name)
