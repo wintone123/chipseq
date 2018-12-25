@@ -6,7 +6,9 @@ library(biomaRt)
 library(chipseq)
 library(BSgenome.Mmusculus.UCSC.mm10)  
 library(Gviz)
+library(dplyr)
 
+print("================Let's go================")
 # load necessary data
 genome <- BSgenome.Mmusculus.UCSC.mm10
 mart <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",
@@ -24,31 +26,29 @@ load_list <- load_list[which(load_list != "output")]
 dir.create(file.path(path,"output"), showWarnings = FALSE)  # create output folder
 
 # gene list
-gene_list <- c("Nanog")
-gene_location_list <- vector()
-for(gene in gene_list){
-  gene_location <- getBM(attributes = c("chromosome_name",), mart = ds, 
-                         filter = "external_gene_name", values = gene)
-  gene_location_list <- append(gene_location_list, gene_location$chromosome_name)                                    
+gene_list <- c("Nanog","Sox2")
+gene_info_df <- getBM(attributes = c("ensembl_gene_id","external_gene_name", "chromosome_name", "strand",
+                                     "start_position", "end_position", "exon_chrom_start", "exon_chrom_end",
+                                     "5_utr_start", "5_utr_end", "3_utr_start", "3_utr_end"), 
+                      mart = ds, filter = "external_gene_name", values = gene_list)
+gene_df <- gene_info_df[,c(2,3)]
+gene_df <- gene_df[!duplicated(gene_df),]
+gene_df <- gene_df[order(gene_df$chromosome_name),]
+for(i in c(1:nrow(gene_df))){
+  assign(paste0(gene_df[i,]$external_gene_name, "_info"), 
+         filter(gene_info_df, external_gene_name == gene_df[i,]$external_gene_name))
 }
-gene_df <- data.frame("name" = gene_list, "location" = gene_location_list)
-gene_df <- gene_df[order(gene_df$location),]
+print("database loaded")
 
 # analysis process
-print("===============Let's go===============")
-load_list <- vector()
 for(gene_num in c(1:nrow(gene_df))){
+  print("+++++++++++++++Loop Start+++++++++++++++")
   # load info
-  gene <- gene_df[gene_num,]$name
+  gene <- gene_df[gene_num,]$external_gene_name
   print(paste0("target gene: ", gene))
   gene_name <- paste0(gene, "_info")
-  assign(gene_name, getBM(attributes = c("ensembl_gene_id","external_gene_name", "chromosome_name", "strand",
-                                        "start_position", "end_position", "exon_chrom_start", "exon_chrom_end",
-                                        "5_utr_start", "5_utr_end", "3_utr_start", "3_utr_end"), 
-                          mart = ds, filter = "external_gene_name", values = gene))
-  load_list <- append(load_list, gene_name)
-  chrom <- gene_df[gene_num,]$location
-
+  chrom <- gene_df[gene_num,]$chromosome_name
+  
   # isolate promoter (+/- 200 bp from TSS)
   promoter <- eval(parse(text = gene_name))[c(1:6)]
   promoter <- promoter[!duplicated(promoter),]
@@ -86,11 +86,11 @@ for(gene_num in c(1:nrow(gene_df))){
   utr_5_regin <- GRanges(seqnames = Rle(paste0("chr", chrom)),
                          ranges = IRanges(start = utr_5_list[1], end = utr_5_list[2]),
                          strand = Rle("*"))
-
+  
   # isolate extend 3' UTR
   utr_3 <- eval(parse(text = gene_name))[c(1:4,11,12)]
   utr_3 <- na.omit(utr_3[!duplicated(utr_3),])
-  utr_3 <- utr_3[order(utr_3$"3_utr_start")]
+  utr_3 <- utr_3[order(utr_3$"3_utr_start"),]
   for(i in c(1:nrow(utr_3))){
     if(i == 1){
       start <- utr_3[i,]$"3_utr_start"
@@ -145,20 +145,25 @@ for(gene_num in c(1:nrow(gene_df))){
   exon_extend_regin <- GRanges(seqnames = Rle(paste0("chr", chrom)),
                                ranges = IRanges(start = exon_extend$start, end = exon_extend$end),
                                strand = Rle("*"))
-  for(i in c(1:(length(exon_list)/2-1))){
-    if(i == 1){
-      intron_from_exon_extend <- data.frame("external_gene_name" = gene, "start" = exon_list[i*2]+1, "end" = exon_list[i*2+1]-1)
-    } else{
-      intron_from_exon_extend[nrow(intron_from_exon_extend)+1,] <- c(gene, exon_list[i*2]+1, exon_list[i*2+1]-1)
+  if(length(exon_list) >= 4){
+    for(i in c(1:(length(exon_list)/2-1))){
+      if(i == 1){
+        intron_from_exon_extend <- data.frame("external_gene_name" = gene, "start" = exon_list[i*2]+1, "end" = exon_list[i*2+1]-1)
+      } else{
+        intron_from_exon_extend[nrow(intron_from_exon_extend)+1,] <- c(gene, exon_list[i*2]+1, exon_list[i*2+1]-1)
+      }
     }
+    intron_from_exon_extend$start <- as.numeric(intron_from_exon_extend$start)
+    intron_from_exon_extend$end <- as.numeric(intron_from_exon_extend$end)
+    intron_from_exon_extend_regin <- GRanges(seqnames = Rle(paste0("chr", chrom)),
+                                             ranges = IRanges(start = intron_from_exon_extend$start, 
+                                                              end = intron_from_exon_extend$end),
+                                             strand = Rle("*"))
+  } else{
+    intron_from_exon_extend_regin <- GRanges(seqnames = Rle(paste0("chr", chrom)),
+                                             ranges = IRanges(start = 0, end = 0),
+                                             strand = Rle("*"))
   }
-  intron_from_exon_extend$start <- as.numeric(intron_from_exon_extend$start)
-  intron_from_exon_extend$end <- as.numeric(intron_from_exon_extend$end)
-  intron_from_exon_extend_regin <- GRanges(seqnames = Rle(paste0("chr", chrom)),
-                                           ranges = IRanges(start = intron_from_exon_extend$start, 
-                                                            end = intron_from_exon_extend$end),
-                                           strand = Rle("*"))
-
   # isolate extend intron and exon from extend intron
   for(i in c(1:nrow(exon))){
     if(i == 1){
@@ -194,41 +199,48 @@ for(gene_num in c(1:nrow(gene_df))){
   exon_from_intron_extend$start <- as.numeric(exon_from_intron_extend$start)
   exon_from_intron_extend$end <- as.numeric(exon_from_intron_extend$end)
   exon_from_intron_extend_regin <- GRanges(seqnames = Rle(paste0("chr", chrom)),
-                                           ranges = IRanges(start = exon_from_intron_extend$start, end = exon_from_intron_extend$end),
+                                           ranges = IRanges(start = exon_from_intron_extend$start, 
+                                           end = exon_from_intron_extend$end),
                                            strand = Rle("*"))
-  for(i in c(1:(length(exon_list_2)/2-1))){
-    if(i == 1){
-      intron_extend <- data.frame("external_gene_name" = gene, "start" = exon_list_2[i*2]+1, "end" = exon_list_2[i*2+1]-1)
-    } else{
-      intron_extend[nrow(intron_extend)+1,] <- c(gene, exon_list_2[i*2]+1, exon_list_2[i*2+1]-1)
+  if(length(exon_list_2) >= 4){
+    for(i in c(1:(length(exon_list_2)/2-1))){
+      if(i == 1){
+        intron_extend <- data.frame("external_gene_name" = gene, "start" = exon_list_2[i*2]+1, "end" = exon_list_2[i*2+1]-1)
+      } else{
+        intron_extend[nrow(intron_extend)+1,] <- c(gene, exon_list_2[i*2]+1, exon_list_2[i*2+1]-1)
+      }
     }
+    intron_extend$start <- as.numeric(intron_extend$start)
+    intron_extend$end <- as.numeric(intron_extend$end)
+    intron_extend_regin <- GRanges(seqnames = Rle(paste0("chr", chrom)),
+                                   ranges = IRanges(start = intron_extend$start, 
+                                                              end = intron_extend$end),
+                                   strand = Rle("*"))
+  } else{
+    intron_extend_regin <- GRanges(seqnames = Rle(paste0("chr", chrom)),
+                                   ranges = IRanges(start = 0, end = 0),
+                                   strand = Rle("*"))
   }
-  intron_extend$start <- as.numeric(intron_extend$start)
-  intron_extend$end <- as.numeric(intron_extend$end)
-  intron_extend_regin <- GRanges(seqnames = Rle(paste0("chr", chrom)),
-                                           ranges = IRanges(start = intron_extend$start, 
-                                                            end = intron_extend$end),
-                                           strand = Rle("*"))
 
   #load files
-  if(gene_num = 1){
+  if(gene_num == 1){
     read_list <- vector()
-    for(file in load_list){
-      if(strsplit(file, split = "_", fixed = TRUE)[[1]][3] == paste0("chr", chrom, ".bed"){
+    for(file_name in load_list){
+      if(strsplit(file_name, split = "_", fixed = TRUE)[[1]][3] == paste0("chr", chrom, ".bed")){
         base_name <- strsplit(file_name, split = ".", fixed = TRUE)[[1]][1]
         assign(base_name, prepareChipseq(import.bed(file.path(path, "split_files", file_name))))
         read_list <- c(read_list, base_name)
       }
     }
     read_list <- sort(read_list)
-  } else if(gene_num > 1){
-    if(gene_df[gene_num,]$location != gene_df[gene_num-1,]$location){
+  } else {
+    if(chrom != gene_df[gene_num-1,]$chromosome_name){
       for(name in read_list){
         remove(name)
       }
       read_list <- vector()
-      for(file in load_list){
-        if(strsplit(file, split = "_", fixed = TRUE)[[1]][3] == paste0("chr", chrom, ".bed"){
+      for(file_name in load_list){
+        if(strsplit(file_name, split = "_", fixed = TRUE)[[1]][3] == paste0("chr", chrom, ".bed")){
           base_name <- strsplit(file_name, split = ".", fixed = TRUE)[[1]][1]
           assign(base_name, prepareChipseq(import.bed(file.path(path, "split_files", file_name))))
           read_list <- c(read_list, base_name)
@@ -237,34 +249,38 @@ for(gene_num in c(1:nrow(gene_df))){
       read_list <- sort(read_list)
     }
   }
+  print("bed file loaded")
 
   # findoverlap 
   output <- data.frame(c("total peaks", "promoter peaks", "5' UTR peaks", "3' UTR peaks", "exon extend peaks", 
                          "exon from intron extend peaks", "intron extend peaks", "intron from exon extend peaks"))
   for(name in read_list){
     print(paste0("sample: ", name))
-    total_peak <- length(oval(parse(text = name)))
+    total_peak <- length(eval(parse(text = name)))
     print(paste0("total peaks: ", total_peak))
-    promoter_peak <- sum(countOverlap(promoter_region, oval(parse(text = name))))
+    promoter_peak <- sum(countOverlaps(promoter_region, eval(parse(text = name))))
     print(paste0("promoter peaks: ", promoter_peak))
-    utr_5_peak <- sum(countOverlap(utr_5_regin, oval(parse(text = name))))
+    utr_5_peak <- sum(countOverlaps(utr_5_regin, eval(parse(text = name))))
     print(paste0("5' UTR peaks: ", utr_5_peak))
-    utr_3_peak <- sum(countOverlap(utr_3_regin, oval(parse(text = name))))
+    utr_3_peak <- sum(countOverlaps(utr_3_regin, eval(parse(text = name))))
     print(paste0("3' UTR peaks: ", utr_3_peak))
-    exon_extend_peak <- sum(countOverlap(exon_extend_regin, oval(parse(text = name))))
+    exon_extend_peak <- sum(countOverlaps(exon_extend_regin, eval(parse(text = name))))
     print(paste0("exon extend peaks: ", exon_extend_peak))
-    exon_from_intron_extend_peak <- sum(countOverlap(exon_from_intron_extend_regin, oval(parse(text = name))))
+    exon_from_intron_extend_peak <- sum(countOverlaps(exon_from_intron_extend_regin, eval(parse(text = name))))
     print(paste0("exon from intron extend peaks: ", exon_from_intron_extend_peak))
-    intron_extend_peak <- sum(countOverlap(intron_extend_regin, oval(parse(text = name))))
+    intron_extend_peak <- sum(countOverlaps(intron_extend_regin, eval(parse(text = name))))
     print(paste0("intron extend peaks: ", intron_extend_peak))
-    intron_from_exon_extend_peak <- sum(countOverlap(intron_from_exon_extend_regin, oval(parse(text = name))))
+    intron_from_exon_extend_peak <- sum(countOverlaps(intron_from_exon_extend_regin, eval(parse(text = name))))
     print(paste0("intron from exon extend peaks: ", intron_from_exon_extend_peak))
     output[,ncol(output)+1] <- c(total_peak, promoter_peak, utr_5_peak, utr_3_peak, exon_extend_peak, 
                                  exon_from_intron_extend_peak, intron_extend_peak, intron_from_exon_extend_peak)
+    print("---------------------------------------")
   }
   colnames(output) <- c("items", read_list)
 
   # export data
   write.csv(output, paste0(path, "/output/chr", chrom, "_", gene, ".csv"))
   print(paste0("output: /output/chr", chrom, "_", gene, ".csv"))
+  print("+++++++++++++++Loop Done+++++++++++++++")
 }
+print("=================Finish!===============")
