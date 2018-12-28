@@ -1,3 +1,5 @@
+# load separated bed files
+
 # load library
 library(GenomicRanges)
 library(rtracklayer)
@@ -26,7 +28,7 @@ load_list <- load_list[which(load_list != "output")]
 dir.create(file.path(path,"output"), showWarnings = FALSE)  # create output folder
 
 # gene list
-gene_list <- c("Nanog","Sox2")
+gene_list <- c("Nanog","Sox2","Pou5f1")
 gene_info_df <- getBM(attributes = c("ensembl_gene_id","external_gene_name", "chromosome_name", "strand",
                                      "start_position", "end_position", "exon_chrom_start", "exon_chrom_end",
                                      "5_utr_start", "5_utr_end", "3_utr_start", "3_utr_end"), 
@@ -164,6 +166,7 @@ for(gene_num in c(1:nrow(gene_df))){
                                              ranges = IRanges(start = 0, end = 0),
                                              strand = Rle("*"))
   }
+  
   # isolate extend intron and exon from extend intron
   for(i in c(1:nrow(exon))){
     if(i == 1){
@@ -227,7 +230,7 @@ for(gene_num in c(1:nrow(gene_df))){
     read_list <- vector()
     for(file_name in load_list){
       if(strsplit(file_name, split = "_", fixed = TRUE)[[1]][3] == paste0("chr", chrom, ".bed")){
-        base_name <- strsplit(file_name, split = ".", fixed = TRUE)[[1]][1]
+        base_name <- strsplit(file_name, split = "_", fixed = TRUE)[[1]][1]
         assign(base_name, prepareChipseq(import.bed(file.path(path, "split_files", file_name))))
         read_list <- c(read_list, base_name)
       }
@@ -241,7 +244,7 @@ for(gene_num in c(1:nrow(gene_df))){
       read_list <- vector()
       for(file_name in load_list){
         if(strsplit(file_name, split = "_", fixed = TRUE)[[1]][3] == paste0("chr", chrom, ".bed")){
-          base_name <- strsplit(file_name, split = ".", fixed = TRUE)[[1]][1]
+          base_name <- strsplit(file_name, split = "_", fixed = TRUE)[[1]][1]
           assign(base_name, prepareChipseq(import.bed(file.path(path, "split_files", file_name))))
           read_list <- c(read_list, base_name)
         }
@@ -252,35 +255,67 @@ for(gene_num in c(1:nrow(gene_df))){
   print("bed file loaded")
 
   # findoverlap 
-  output <- data.frame(c("total peaks", "promoter peaks", "5' UTR peaks", "3' UTR peaks", "exon extend peaks", 
-                         "exon from intron extend peaks", "intron extend peaks", "intron from exon extend peaks"))
-  for(name in read_list){
-    print(paste0("sample: ", name))
-    total_peak <- length(eval(parse(text = name)))
-    print(paste0("total peaks: ", total_peak))
-    promoter_peak <- sum(countOverlaps(promoter_region, eval(parse(text = name))))
-    print(paste0("promoter peaks: ", promoter_peak))
-    utr_5_peak <- sum(countOverlaps(utr_5_regin, eval(parse(text = name))))
-    print(paste0("5' UTR peaks: ", utr_5_peak))
-    utr_3_peak <- sum(countOverlaps(utr_3_regin, eval(parse(text = name))))
-    print(paste0("3' UTR peaks: ", utr_3_peak))
-    exon_extend_peak <- sum(countOverlaps(exon_extend_regin, eval(parse(text = name))))
-    print(paste0("exon extend peaks: ", exon_extend_peak))
-    exon_from_intron_extend_peak <- sum(countOverlaps(exon_from_intron_extend_regin, eval(parse(text = name))))
-    print(paste0("exon from intron extend peaks: ", exon_from_intron_extend_peak))
-    intron_extend_peak <- sum(countOverlaps(intron_extend_regin, eval(parse(text = name))))
-    print(paste0("intron extend peaks: ", intron_extend_peak))
-    intron_from_exon_extend_peak <- sum(countOverlaps(intron_from_exon_extend_regin, eval(parse(text = name))))
-    print(paste0("intron from exon extend peaks: ", intron_from_exon_extend_peak))
-    output[,ncol(output)+1] <- c(total_peak, promoter_peak, utr_5_peak, utr_3_peak, exon_extend_peak, 
-                                 exon_from_intron_extend_peak, intron_extend_peak, intron_from_exon_extend_peak)
-    print("---------------------------------------")
-  }
-  colnames(output) <- c("items", read_list)
-
-  # export data
-  write.csv(output, paste0(path, "/output/chr", chrom, "_", gene, ".csv"))
-  print(paste0("output: /output/chr", chrom, "_", gene, ".csv"))
+  if(gene_num == 1){
+    output <- data.frame(c("total peaks", "promoter peaks", "5' UTR peaks", "3' UTR peaks", "exon extend peaks", 
+                           "exon from intron extend peaks", "intron extend peaks", "intron from exon extend peaks"))
+    output[,ncol(output)+1] <- c(rep(gene, nrow(output)))
+    output[,ncol(output)+1] <- c(rep(paste0("chr", chrom), nrow(output)))
+    for(name in read_list){
+      print(paste0("sample: ", name))
+      total_peak <- length(eval(parse(text = name)))
+      print(paste0("total peaks: ", total_peak))
+      promoter_peak <- sum(countOverlaps(promoter_region, eval(parse(text = name))))
+      print(paste0("promoter peaks: ", promoter_peak))
+      utr_5_peak <- sum(countOverlaps(utr_5_regin, eval(parse(text = name))))
+      print(paste0("5' UTR peaks: ", utr_5_peak))
+      utr_3_peak <- sum(countOverlaps(utr_3_regin, eval(parse(text = name))))
+      print(paste0("3' UTR peaks: ", utr_3_peak))
+      exon_extend_peak <- sum(countOverlaps(exon_extend_regin, eval(parse(text = name))))
+      print(paste0("exon extend peaks: ", exon_extend_peak))
+      exon_from_intron_extend_peak <- sum(countOverlaps(exon_from_intron_extend_regin, eval(parse(text = name))))
+      print(paste0("exon from intron extend peaks: ", exon_from_intron_extend_peak))
+      intron_extend_peak <- sum(countOverlaps(intron_extend_regin, eval(parse(text = name))))
+      print(paste0("intron extend peaks: ", intron_extend_peak))
+      intron_from_exon_extend_peak <- sum(countOverlaps(intron_from_exon_extend_regin, eval(parse(text = name))))
+      print(paste0("intron from exon extend peaks: ", intron_from_exon_extend_peak))
+      output[,ncol(output)+1] <- c(total_peak, promoter_peak, utr_5_peak, utr_3_peak, exon_extend_peak, 
+                                  exon_from_intron_extend_peak, intron_extend_peak, intron_from_exon_extend_peak)
+      print("---------------------------------------")
+    }
+    colnames(output) <- c("items", "gene", "chrom", read_list)
+  } else{
+    output_1 <- data.frame(c("total peaks", "promoter peaks", "5' UTR peaks", "3' UTR peaks", "exon extend peaks", 
+                             "exon from intron extend peaks", "intron extend peaks", "intron from exon extend peaks"))
+    output_1[,ncol(output_1)+1] <- c(rep(gene, nrow(output_1)))
+    output_1[,ncol(output_1)+1] <- c(rep(paste0("chr", chrom), nrow(output_1)))
+    for(name in read_list){
+      print(paste0("sample: ", name))
+      total_peak <- length(eval(parse(text = name)))
+      print(paste0("total peaks: ", total_peak))
+      promoter_peak <- sum(countOverlaps(promoter_region, eval(parse(text = name))))
+      print(paste0("promoter peaks: ", promoter_peak))
+      utr_5_peak <- sum(countOverlaps(utr_5_regin, eval(parse(text = name))))
+      print(paste0("5' UTR peaks: ", utr_5_peak))
+      utr_3_peak <- sum(countOverlaps(utr_3_regin, eval(parse(text = name))))
+      print(paste0("3' UTR peaks: ", utr_3_peak))
+      exon_extend_peak <- sum(countOverlaps(exon_extend_regin, eval(parse(text = name))))
+      print(paste0("exon extend peaks: ", exon_extend_peak))
+      exon_from_intron_extend_peak <- sum(countOverlaps(exon_from_intron_extend_regin, eval(parse(text = name))))
+      print(paste0("exon from intron extend peaks: ", exon_from_intron_extend_peak))
+      intron_extend_peak <- sum(countOverlaps(intron_extend_regin, eval(parse(text = name))))
+      print(paste0("intron extend peaks: ", intron_extend_peak))
+      intron_from_exon_extend_peak <- sum(countOverlaps(intron_from_exon_extend_regin, eval(parse(text = name))))
+      print(paste0("intron from exon extend peaks: ", intron_from_exon_extend_peak))
+      output_1[,ncol(output_1)+1] <- c(total_peak, promoter_peak, utr_5_peak, utr_3_peak, exon_extend_peak, 
+                                       exon_from_intron_extend_peak, intron_extend_peak, intron_from_exon_extend_peak)
+      print("---------------------------------------")
+    }
+    colnames(output_1) <- c("items", "gene", "chrom", read_list)
+    output <- rbind(output, output_1)
+  }    
   print("+++++++++++++++Loop Done+++++++++++++++")
 }
-print("=================Finish!===============")
+# export data
+write.csv(output, paste0(path, "/output/output.csv"))
+print(paste0("output: /output/output.csv"))
+print("================Finish!================")

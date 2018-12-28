@@ -20,5 +20,3 @@ do
     done
     echo "==========Done!=========="
 done
-
-# data process

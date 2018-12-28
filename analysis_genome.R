@@ -517,16 +517,9 @@ for(chrom_1 in genome_list){
   }
   gd_list <- append(gd_list, seqlengths(genome)[n])
   gd_temp <- data.frame("chromosome_name", "gd_start", "gd_end", stringsAsFactors=FALSE)
-  if(gd_list[2] - gd_list[1] > 100000){
-    a <- 1
-  } else{
-    a<- 2
-  }
-  if(gd_list[length(gd_list)] - gd_list[length(gd_list)-1] > 100000){
-    b <- length(gd_list)/2
-  } else{
-    b <- (length(gd_list)/2)-1
-  }
+  a <- ifelse(gd_list[2] - gd_list[1] > 100000, 1,2)
+  b <- ifelse(gd_list[length(gd_list)] - gd_list[length(gd_list)-1] > 100000, 
+              length(gd_list)/2, (length(gd_list)/2)-1)
   for(i in c(a:b)){
     gd_temp[nrow(gd_temp)+1,] <- c(chrom, gd_list[i*2-1], gd_list[i*2])
   }
