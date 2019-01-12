@@ -54,7 +54,7 @@ bm <- BiomartGeneRegionTrack(chromosome = chromosome, genome = "mm9",  # human(h
 AT <- GenomeAxisTrack()
 plotTracks(c(bm,AT), from = start, to = end,
            transcriptAnnotation = "symbol", window = "auto",
-           cex.title = 1, fontsize = 10)
+           cex.title = 1, fontsize = 10, stacking = "dense")
 
 # bin generation 
 binsize <- 200  # binsize (200 bp)
@@ -99,7 +99,7 @@ for(bin_track_name in bin_track_list){
 }
 plotTracks(c(bin_track_temp, bm, AT), from = start, 
            to = end, transcriptAnnotation = "symbol", window = "auto", 
-           type = "histogram", cex.title = 0.7, fontsize = 10)
+           type = "histogram", cex.title = 0.7, fontsize = 10, stacking = "dense")
 
 # load peaks
 peak_list <- vector()
@@ -126,7 +126,7 @@ for(track_name in sort(c(bin_track_list, peak_track_list))){
 }
 plotTracks(c(bin_peak_track_temp, bm, AT), from = start, to = end, 
            transcriptAnnotation = "symbol", window = "auto",
-           type = "histogram", cex.title = 0.7, fontsize = 10)
+           type = "histogram", cex.title = 0.7, fontsize = 10, stacking = "dense")
 
 # peaks enrichment
 peak_temp <- vector()
@@ -145,4 +145,4 @@ for(name in enrich_list){
 }
 plotTracks(c(bin_peak_track_temp, enriched_regions_track, bm, AT), from = start, to = end, 
            transcriptAnnotation = "symbol", window = "auto",
-           type = "histogram", cex.title = 0.7, fontsize = 10)
+           type = "histogram", cex.title = 0.7, fontsize = 10, stacking = "dense")

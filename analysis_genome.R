@@ -63,7 +63,7 @@ for(chrom_1 in genome_list){
   # peaks in egs regions
   export_temp <- vector()
   for(name in read_list){
-    egs_peak_sum <- sum(countOverlaps(egs_regions, eval(parse(text = name))))
+    egs_peak_sum <- sum(countOverlaps(eval(parse(text = name)), egs_regions))
     print(paste(name, "has", egs_peak_sum, "peaks in egs regions", sep = " "))
     export_temp <- append(export_temp, egs_peak_sum)
   }
@@ -104,7 +104,7 @@ for(chrom_1 in genome_list){
   # peaks in egs overlapp regions
   export_temp <- vector()
   for(name in read_list){
-    egs_overlap_peak_sum <- sum(countOverlaps(egs_overlap_regions, eval(parse(text = name))))
+    egs_overlap_peak_sum <- sum(countOverlaps(eval(parse(text = name)), egs_overlap_regions))
     print(paste(name, "has", egs_overlap_peak_sum, "peaks in egs overlap regions", sep = " "))
     export_temp <- append(export_temp, egs_overlap_peak_sum)
   }
@@ -120,7 +120,7 @@ for(chrom_1 in genome_list){
   # peaks in promoter regions (+/- 200 bp around TSS)
   export_temp <- vector()
   for(name in read_list){
-    promoter_peak_sum <- sum(countOverlaps(promoter_regions, eval(parse(text = name))))
+    promoter_peak_sum <- sum(countOverlaps(eval(parse(text = name)), promoter_regions))
     print(paste(name, "has", promoter_peak_sum, "peaks in promoter regions", sep = " "))
     export_temp <- append(export_temp, promoter_peak_sum)
   }
@@ -140,7 +140,7 @@ for(chrom_1 in genome_list){
   # peaks in exon regions
   export_temp <- vector()
   for(name in read_list){
-    exon_peak_sum <- sum(countOverlaps(exon_regions, eval(parse(text = name))))
+    exon_peak_sum <- sum(countOverlaps(eval(parse(text = name)), exon_regions))
     print(paste(name, "has", exon_peak_sum, " peaks in exon regions", sep = " "))
     export_temp <- append(export_temp, exon_peak_sum)
   }
@@ -199,7 +199,7 @@ for(chrom_1 in genome_list){
   # peaks in extend gene exon regions
   export_temp <- vector()
   for(name in read_list){
-    exon_extend_peak_sum <- sum(countOverlaps(exon_extend_regions, eval(parse(text = name))))
+    exon_extend_peak_sum <- sum(countOverlaps(eval(parse(text = name)), exon_extend_regions))
     print(paste(name, "has", exon_extend_peak_sum, "peaks in exon extend regions", sep = " "))
     export_temp <- append(export_temp, exon_extend_peak_sum)
   }
@@ -209,7 +209,7 @@ for(chrom_1 in genome_list){
   # peaks in gene intron regions from extend exon
   export_temp <- vector()
   for(name in read_list){
-    intron_peak_sum <- sum(countOverlaps(intron_from_exon_extend_regions, eval(parse(text = name))))
+    intron_peak_sum <- sum(countOverlaps(eval(parse(text = name)), intron_from_exon_extend_regions))
     print(paste(name, "has", intron_peak_sum, "peaks in intron from exon extend regions", sep = " "))
     export_temp <- append(export_temp, intron_peak_sum)
   }
@@ -274,7 +274,7 @@ for(chrom_1 in genome_list){
   # peaks in gene intron extend regions 
   export_temp <- vector()
   for(name in read_list){
-    intron_peak_sum <- sum(countOverlaps(intron_extend_regions, eval(parse(text = name))))
+    intron_peak_sum <- sum(countOverlaps(eval(parse(text = name)), intron_extend_regions))
     print(paste(name, "has", intron_peak_sum, "peaks in intron extend regions", sep = " "))
     export_temp <- append(export_temp, intron_peak_sum)
   }
@@ -284,7 +284,7 @@ for(chrom_1 in genome_list){
   # peaks in gene exon regions from intron extend
   export_temp <- vector()
   for(name in read_list){
-    exon_peak_sum <- sum(countOverlaps(exon_from_intron_extend_regions, eval(parse(text = name))))
+    exon_peak_sum <- sum(countOverlaps(eval(parse(text = name)), exon_from_intron_extend_regions))
     print(paste(name, "has", exon_peak_sum, "peaks in exon from intron extend regions", sep = " "))
     export_temp <- append(export_temp, exon_peak_sum)
   }
@@ -341,7 +341,7 @@ for(chrom_1 in genome_list){
   # peaks in 5' UTR extend regions
   export_temp <- vector()
   for(name in read_list){
-    utr_5_peak_sum <- sum(countOverlaps(utr_5_extend_regions, eval(parse(text = name))))
+    utr_5_peak_sum <- sum(countOverlaps(eval(parse(text = name)), utr_5_extend_regions))
     print(paste(name, "has", utr_5_peak_sum, "peaks in 5' UTR extend regions", sep = " "))
     export_temp <- append(export_temp, utr_5_peak_sum)
   }
@@ -383,7 +383,7 @@ for(chrom_1 in genome_list){
   # peaks in 5' UTR overlap regions
   export_temp <- vector()
   for(name in read_list){
-    utr_5_peak_sum <- sum(countOverlaps(utr_5_overlap_regions, eval(parse(text = name))))
+    utr_5_peak_sum <- sum(countOverlaps(eval(parse(text = name)), utr_5_overlap_regions))
     print(paste(name, "has", utr_5_peak_sum, "peaks in 5' UTR overlap regions", sep = " "))
     export_temp <- append(export_temp, utr_5_peak_sum)
   }
@@ -440,7 +440,7 @@ for(chrom_1 in genome_list){
   # peaks in 3' extend UTR regions
   export_temp <- vector()
   for(name in read_list){
-    utr_3_peak_sum <- sum(countOverlaps(utr_3_extend_regions, eval(parse(text = name))))
+    utr_3_peak_sum <- sum(countOverlaps(eval(parse(text = name)), utr_3_extend_regions))
     print(paste(name, "has", utr_3_peak_sum, "peaks in 3' UTR extend regions", sep = " "))
     export_temp <- append(export_temp, utr_3_peak_sum)
   }
@@ -482,7 +482,7 @@ for(chrom_1 in genome_list){
   # peaks in 3' overlap UTR regions
   export_temp <- vector()
   for(name in read_list){
-    utr_3_peak_sum <- sum(countOverlaps(utr_3_overlap_regions, eval(parse(text = name))))
+    utr_3_peak_sum <- sum(countOverlaps(eval(parse(text = name)), utr_3_overlap_regions))
     print(paste(name, "has", utr_3_peak_sum, "peaks in 3' UTR overlap regions", sep = " "))
     export_temp <- append(export_temp, utr_3_peak_sum)
   }
@@ -533,7 +533,7 @@ for(chrom_1 in genome_list){
   # peaks in intragenic regions (gene distance > 200kb)
   export_temp <- vector()
   for(name in read_list){
-    intragene_peak_sum <- sum(countOverlaps(gd_regions, eval(parse(text = name))))
+    intragene_peak_sum <- sum(countOverlaps(eval(parse(text = name)), gd_regions))
     print(paste(name, "has", intragene_peak_sum, "peaks in intragenic regions", sep = " "))
     export_temp <- append(export_temp, intragene_peak_sum)
   }
