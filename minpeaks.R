@@ -38,4 +38,3 @@ min_peaks <- function(GRanges_1, GRanges_2){
                            strand = Rle("*"))
     return(new_GRanges)
 }
-

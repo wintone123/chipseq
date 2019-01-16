@@ -14,3 +14,14 @@ tilesequence <- function(seqname, start, end, tilewidth){
                           strand = Rle("*"))
   return(GRanges_temp)
 }
+
+# import narrowpeak file
+import_np <- function(path){
+  temp <- read.delim2(path, quote = "/", head = FALSE)
+  GRanges_temp <- GRanges(seqnames = Rle(temp[,1]),
+                          ranges = IRanges(start = temp[,2], end = temp[,3]),
+                          strand = Rle("*"),
+                          name = as.character(temp[,4]),
+                          score = as.numeric(temp[,5]))
+  return(GRanges_temp)
+}
