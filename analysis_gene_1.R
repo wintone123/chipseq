@@ -41,7 +41,7 @@ for(i in c(1:nrow(gene_df))){
          filter(gene_info_df, external_gene_name == gene_df[i,]$external_gene_name))
 }
 print("database loaded")
-
+ 
 # analysis process
 for(gene_num in c(1:nrow(gene_df))){
   print("+++++++++++++++Loop Start+++++++++++++++")
