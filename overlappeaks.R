@@ -1,4 +1,4 @@
-min_peaks <- function(GRanges_1, GRanges_2){
+overlap_peaks <- function(GRanges_1, GRanges_2){
     df_1 <- data.frame(start(GRanges_1), end(GRanges_1))
     df_2 <- data.frame(start(GRanges_2), end(GRanges_2))
     start_out <- vector()
