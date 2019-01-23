@@ -37,7 +37,7 @@ for(file_name in load_list){
   }
 }
 
-# bm for mm9 
+# bm for mm10 
 mart <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",
                 dataset = "mmusculus_gene_ensembl",  # human (hsapiens_gene_ensembl)
                 host = "jul2018.archive.ensembl.org")  # ensembl release 93 (july 2018)
