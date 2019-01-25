@@ -18,3 +18,5 @@ do
     bedtools bamtobed -i file > $basename".bed"
     echo $basename".bed established!"
 done
+
+haha
