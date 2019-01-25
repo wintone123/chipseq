@@ -22,9 +22,9 @@ for file in *_peaks.narrowPeak
 do
     basename=${file:0:-11}
     echo "spliting "$file
-    for chr in $chrom_list
+    for i in $chrom_list
     do
-        awk -va=$chr '{if($1 == "chr"a) print $0}' $file > $outdir"/"$basename"_chr"$chr".narrowPeak"
+        awk -va=$i '{if($1 == "chr"a) print $0}' $file > $outdir"/"$basename"_chr"$i".narrowPeak"
     done
     echo "=============Done!============="
 done

@@ -21,9 +21,9 @@ for file in *_peaks.bed
 do
     basename=${file:0:-4}
     echo "spliting "$file
-    for chr in $chrom_list
+    for i in $chrom_list
     do
-        awk -va=$chr '{if($1 == "chr"a) print $0}' $file > "peaks_split_files/"$basename"_chr"$chr".bed"
+        awk -va=$i '{if($1 == "chr"a) print $0}' $file > "peaks_split_files/"$basename"_chr"$i".bed"
     done
     echo "=============Done!============="
 done

@@ -1,7 +1,7 @@
 path="/mnt/c/chipseq/test3"
 cd $path
 
-# sam to bam
+# sam to bam (remove quality < 40 reads)
 for file in *.sam
 do
     echo "transfering "$file"......"
