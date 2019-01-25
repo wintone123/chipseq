@@ -24,7 +24,6 @@ prepareChipseq <- function(reads){
 }
 path <- "/mnt/c/chipseq/test2"  # input file path
 load_list <- list.files(file.path(path, "split_files"))
-load_list <- load_list[which(load_list != "output")]
 dir.create(file.path(path,"output"), showWarnings = FALSE)  # create output folder
 
 # gene list
@@ -258,7 +257,7 @@ for(gene_num in c(1:nrow(gene_df))){
   if(gene_num == 1){
     output <- data.frame(c("total peaks", "promoter peaks", "5' UTR peaks", "3' UTR peaks", "exon extend peaks", 
                            "exon from intron extend peaks", "intron extend peaks", "intron from exon extend peaks"))
-    output[,ncol(output)+1] <- c(rep(gene, nrow(output)))
+    output[,ncol(output)+1] <- c("", rep(gene, nrow(output)-1))
     output[,ncol(output)+1] <- c(rep(paste0("chr", chrom), nrow(output)))
     for(name in read_list){
       print(paste0("sample: ", name))
@@ -286,7 +285,7 @@ for(gene_num in c(1:nrow(gene_df))){
   } else{
     output_1 <- data.frame(c("total peaks", "promoter peaks", "5' UTR peaks", "3' UTR peaks", "exon extend peaks", 
                              "exon from intron extend peaks", "intron extend peaks", "intron from exon extend peaks"))
-    output_1[,ncol(output_1)+1] <- c(rep(gene, nrow(output_1)))
+    output_1[,ncol(output_1)+1] <- c("", rep(gene, nrow(output_1)-1))
     output_1[,ncol(output_1)+1] <- c(rep(paste0("chr", chrom), nrow(output_1)))
     for(name in read_list){
       print(paste0("sample: ", name))

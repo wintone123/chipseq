@@ -75,7 +75,6 @@ prepareChipseq <- function(reads){
 }
 path <- "/mnt/c/chipseq/test3"  # input file path
 load_list <- list.files(path)
-#load_list <- load_list[which(load_list != "output")]
 dir.create(file.path(path,"output"), showWarnings = FALSE)  # create output folder
 
 # gene list
@@ -293,8 +292,6 @@ for(gene_num in c(1:nrow(gene_df))){
         peak_list <- c(peak_list, peak_name)
       }
     }
-    read_list <- sort(read_list)
-    peak_name <- sort(peak_list)
   } else {
     if(chrom != gene_df[gene_num-1,]$chromosome_name){
       for(name in read_list){
@@ -317,26 +314,17 @@ for(gene_num in c(1:nrow(gene_df))){
           peak_list <- c(peak_list, peak_name)
         }
       }
-      read_list <- sort(read_list)
-      peak_name <- sort(peak_list)
     }
   }
-  peak_num <- length(peak_list)
-  if(peak_num == 2){
-    enriched <- overlap_peaks(eval(parse(text = peak_list[1])), eval(parse(text = peak_list[1])))
-  } else if (peak_num >2 {
-    enriched <- overlap_peaks(eval(parse(text = peak_list[1])), eval(parse(text = peak_list[1])))
-    for(i in c(3, peak_num)){
-      enriched <- overlap_peaks(enriched, eval(parse(text = peak_list[i])))
-    }
-  }
+  read_list <- sort(read_list)
+  peak_list <- sort(peak_list)
   print("bed file loaded")
 
-  # findoverlap 
+  # find overlap 
   if(gene_num == 1){
     output <- data.frame(c("total peaks", "promoter peaks", "5' UTR peaks", "3' UTR peaks", "exon extend peaks", 
                            "exon from intron extend peaks", "intron extend peaks", "intron from exon extend peaks"))
-    output[,ncol(output)+1] <- c(rep(gene, nrow(output)))
+    output[,ncol(output)+1] <- c("", rep(gene, nrow(output)-1))
     output[,ncol(output)+1] <- c(rep(paste0("chr", chrom), nrow(output)))
     for(name in read_list){
       print(paste0("sample: ", name))
@@ -364,7 +352,7 @@ for(gene_num in c(1:nrow(gene_df))){
   } else{
     output_1 <- data.frame(c("total peaks", "promoter peaks", "5' UTR peaks", "3' UTR peaks", "exon extend peaks", 
                              "exon from intron extend peaks", "intron extend peaks", "intron from exon extend peaks"))
-    output_1[,ncol(output_1)+1] <- c(rep(gene, nrow(output_1)))
+    output_1[,ncol(output_1)+1] <- c("", rep(gene, nrow(output_1)-1))
     output_1[,ncol(output_1)+1] <- c(rep(paste0("chr", chrom), nrow(output_1)))
     for(name in read_list){
       print(paste0("sample: ", name))
