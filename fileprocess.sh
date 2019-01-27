@@ -53,6 +53,8 @@ done
 echo "=============Done!============="
 
 # peak calling by macs2
+outdir="narrowPeak_split_files"
+mkdir $outdir
 for file in *_best.bed
 do 
     basename=${file:0:-4}
@@ -60,21 +62,19 @@ do
     if [ $file != 'control_best.bed' ]
     then
         echo "calling peaks on "$file 
-        macs2 callpeak -t $file -c $control -n $basename -f BED -g mm -B -q 0.01
+        macs2 callpeak -t $file -c $control -n $basename --outdir $outdir -f BED -g mm -B -q 0.01
     fi
 done
 echo "=============finish calling============="
 
 # peak file split
-outdir="narrowPeak_spilt_files"
-mkdir $outdir
-for file in *.narrowPeak
+for file in narrowPeak_split_files/*.narrowPeak
 do
     basename=${file:0:-11}
     echo "spliting "$file
     for i in $chrom_list
     do
-        awk -va=$i '{if($1 == "chr"a) print $0}' $file > $outdir"/"$basename"_chr"$i".narrowPeak"
+        awk -va=$i '{if($1 == "chr"a) print $0}' $file > $basename"_chr"$i".narrowPeak"
     done
 done
 echo "=============Done!============="
@@ -91,3 +91,15 @@ echo "=============Done!============="
 # done
 # rm ext_split_files/*_ext.txt
 # echo "=============Done!============="
+
+# peak calling by macs2
+# outdir="ext_narrowPeak_split_files"
+# mkdir $outdir
+# for file in ext_split_files/rep*_ext.bed
+# do
+#     control="ext_split_files/control"${file:20}
+#     basename=${file:16}
+#     basename=${basename:0:-4}
+#     echo "calling peak on "$file
+#     macs2 callpeak -t $file -c $control -n $basename --outdir $outdir -f BED -g mm -B -q 0.01 
+# done
