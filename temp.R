@@ -49,3 +49,4 @@ nanog_info_df <- getBM(attributes = c("ensembl_gene_id","external_gene_name", "c
                                       "start_position", "end_position", "exon_chrom_start", "exon_chrom_end",
                                       "5_utr_start", "5_utr_end", "3_utr_start", "3_utr_end"), 
                        mart = ds, filter = "external_gene_name", values = "nanog")
+
