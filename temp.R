@@ -28,11 +28,51 @@ import_np <- function(path){
                           score = as.numeric(temp[,5]))
   return(GRanges_temp)
 }
+overlap_peaks <- function(GRanges_1, GRanges_2){
+    df_1 <- data.frame(start(GRanges_1), end(GRanges_1))
+    df_2 <- data.frame(start(GRanges_2), end(GRanges_2))
+    start_out <- vector()
+    end_out <- vector()
+    loop_s <- 1
+    for(i in c(1:nrow(df_1))){
+        start_1 <- df_1[i,1]
+        end_1 <- df_1[i,2]
+        for(j in c(loop_s:nrow(df_2))){
+            start_2 <- df_2[j,1]
+            end_2 <- df_2[j,2]
+            if (end_2 <= start_1){
+                loop_s <- j
+            } else if (start_2 >= end_1) {
+                break
+            } else{
+                if(start_2 <= start_1){
+                    start_out <- append(start_out, start_1)
+                    if(end_2 <= end_1 & end_2 > start_1){
+                        end_out <- append(end_out, end_2)
+                    } else if(end_2 > end_1){
+                        end_out <- append(end_out, end_1)
+                    }
+                } else if(start_2 > start_1 & start_2 < end_1){
+                    start_out <- append(start_out, start_2)
+                    if(end_2 <= end_1){
+                        end_out <- append(end_out, end_2)
+                    } else{
+                        end_out <- append(end_out, end_1)
+                    }
+                }
+            }
+        }
+    }
+    new_GRanges <- GRanges(seqnames = Rle(GRanges_1@seqnames[1]),
+                           ranges = IRanges(start = start_out, end = end_out),
+                           strand = Rle("*"))
+    return(new_GRanges)
+}
 
 # load peak file
 rep1 <- import.bed("c:/chipseq/test4/rep1_best_chr6.bed")
 rep2 <- import.bed("c:/chipseq/test4/rep2_best_chr6.bed")
-control <- import.bed("c:/chipseq/test3/control_best_chr6.bed")
+control <- import.bed("c:/chipseq/test4/control_best_chr6.bed")
 rep1_peak <- import_np("c:/chipseq/test4/rep1_best_peaks_chr6.narrowpeak")
 rep2_peak <- import_np("c:/chipseq/test4/rep2_best_peaks_chr6.narrowpeak")
 rep1_peak_1 <- import_np("c:/chipseq/test4/rep1_best_peaks_chr6_1.narrowpeak")
@@ -63,7 +103,7 @@ nanog_info_df <- getBM(attributes = c("ensembl_gene_id","external_gene_name", "c
                        mart = ds, filter = "external_gene_name", values = "nanog")
 egs <- getBM(attributes = c("ensembl_gene_id","external_gene_name",
                             "chromosome_name", "start_position",
-                            "end_position", "strand"), mart = ds, 
+                            "end_position", "strand", "gene_biotype"), mart = ds, 
                             filter = "chromosome_name", 
                             values = "6")
 
@@ -79,7 +119,8 @@ for(i in c(1:nrow(egs))){
 tss_chr6 <- GRanges(seqnames = Rle("chr6"),
                     ranges = IRanges(start = egs$TSS-200, end = egs$TSS+200),
                     strand = Rle("*"))
-egs_fil <- egs[unique(queryHits(findOverlaps(tss_chr6, rep1_peak_1))),]
+overlap_peaks <- overlap_peaks(rep1_peak_1, rep2_peak_1)
+egs_fil <- egs[unique(queryHits(findOverlaps(tss_chr6, overlap_peaks))),]
 for(i in c(1:nrow(egs_fil))){
   if(i == 1){
     if(egs_fil$strand[i] == 1){
@@ -89,7 +130,7 @@ for(i in c(1:nrow(egs_fil))){
     }
     strand_temp <- rep(egs_fil$strand[i], 20)
     tss <- data.frame(start = start_temp, strand = strand_temp)
-  }else{
+  }else {
     if(egs_fil$strand[i] == 1){
       start_temp <- egs_fil$start_position[i] + seq(-1000, 900, length.out = 20)
     }else {
@@ -104,12 +145,76 @@ tss_bins <- GRanges(seqnames = Rle("chr6"),
                     ranges = IRanges(start = tss$start, width = 100),
                     strand = Rle(tss$strand))
 rep1_on_tss <- BinChipseq(rep1, tss_bins)
-score <- data.frame(position = c(1:20), score = rep(0, 20))
+rep2_on_tss <- BinChipseq(rep2, tss_bins)
+control_on_tss <- BinChipseq(control, tss_bins)
+total_on_tss <- tss_bins
+total_on_tss$score <- rep1_on_tss$score + rep2_on_tss$score
+score <- data.frame(position = c(1:20), score = rep(0, 20), control = rep(0, 20))
 for(i in c(1:nrow(egs_fil))){
-  if(as.logical(rep1_on_tss@strand[(i-1)*20+1] == "+")){
-    score_temp <- rep1_on_tss$score[c(((i-1)*20+1):(i*20))]
+  if(as.logical(total_on_tss@strand[(i-1)*20+1] == "+")){
+    score_temp <- total_on_tss$score[c(((i-1)*20+1):(i*20))]
   } else{
-    score_temp <- rev(rep1_on_tss$score[c(((i-1)*20+1):(i*20))])
+    score_temp <- rev(total_on_tss$score[c(((i-1)*20+1):(i*20))])
   }
   score$score <- score$score + score_temp
+} 
+for(i in c(1:nrow(egs_fil))){
+  if(as.logical(control_on_tss@strand[(i-1)*20+1] == "+")){
+    score_temp <- control_on_tss$score[c(((i-1)*20+1):(i*20))]
+  } else{
+    score_temp <- rev(control_on_tss$score[c(((i-1)*20+1):(i*20))])
+  }
+  score$control <- score$control + score_temp
+} 
+
+# peak in -100% to 200% area of gene
+gene_chr6 <- GRanges(seqnames = Rle("chr6"),
+                     ranges = IRanges(start = egs$start_position, end = egs$end_position),
+                     strand = Rle("*"))
+egs_fil <- egs[unique(queryHits(findOverlaps(gene_chr6, overlap_peaks))),]
+for(i in c(1:nrow(egs_fil))){
+  start <- 2 * egs_fil$start_position[i] - egs_fil$end_position[i]
+  end <- 2 * egs_fil$end_position[i] - egs_fil$start_position[i]
+  seq_list <- seq(start, end, length.out = 271)
+  start_list <- vector()
+  end_list <- vector()
+  for(j in c(1:length(seq_list))){
+      if(j == 1){
+        start_list <- append(start_list, seq_list[j])
+      } else if(j == length(seq_list)){
+        end_list <- append(end_list, seq_list[j])
+      } else{
+        start_list <- append(start_list, seq_list[j]+1)
+        end_list <- append(end_list, seq_list[j])
+      }
+    }
+  if(i ==1 ){
+	egs_ext <- data.frame(start = start_list, end = end_list, strand = rep(egs_fil$strand[i], 90))
+  } else{
+	egs_ext_temp <- data.frame(start = start_list, end = end_list, strand = rep(egs_fil$strand[i], 90))
+	egs_ext <- rbind(egs_ext, egs_ext_temp)
+  }
 }
+egs_ext_G <- GRanges(seqnames = Rle("chr6"),
+					 ranges = IRanges(start = egs_ext$start, end = egs_ext$end),
+					 strand = Rle(egs_ext$strand))
+rep1_on_egs_ext <- BinChipseq(rep1, egs_ext_G)
+control_on_egs_ext <- BinChipseq(control, egs_ext_G)
+score <- data.frame(position = c(1:270), score = rep(0, 270), control = rep(0, 270))
+for(i in c(1:nrow(egs_fil))){
+  if(as.logical(rep1_on_egs_ext@strand[(i-1)*270+1] == "+")){
+    score_temp <- rep1_on_egs_ext$score[c(((i-1)*270+1):(i*270))]
+  } else{
+    score_temp <- rev(rep1_on_egs_ext$score[c(((i-1)*270+1):(i*270))])
+  }
+  score$score <- score$score + score_temp
+} 
+for(i in c(1:nrow(egs_fil))){
+  if(as.logical(control_on_egs_ext@strand[(i-1)*270+1] == "+")){
+    score_temp <- control_on_egs_ext$score[c(((i-1)*270+1):(i*270))]
+  } else{
+    score_temp <- rev(control_on_egs_ext$score[c(((i-1)*270+1):(i*270))])
+  }
+  score$control <- score$control + score_temp
+} 
+score <- gather(score, c(score, control), key = "item", value = "hits")
