@@ -41,9 +41,9 @@ for(i in c(1:nrow(gene_df))){
 }
 print("database loaded")
  
+print("+++++++++++++++Loop Start+++++++++++++++")
 # analysis process
 for(gene_num in c(1:nrow(gene_df))){
-  print("+++++++++++++++Loop Start+++++++++++++++")
   # load info
   gene <- gene_df[gene_num,]$external_gene_name
   print(paste0("target gene: ", gene))
@@ -312,8 +312,9 @@ for(gene_num in c(1:nrow(gene_df))){
     colnames(output_1) <- c("items", "gene", "chrom", read_list)
     output <- rbind(output, output_1)
   }    
-  print("+++++++++++++++Loop Done+++++++++++++++")
 }
+print("+++++++++++++++Loop Done+++++++++++++++")
+
 # export data
 write.csv(output, paste0(path, "/output/output.csv"))
 print(paste0("output: /output/output.csv"))

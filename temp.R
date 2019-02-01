@@ -189,9 +189,9 @@ for(i in c(1:nrow(egs_fil))){
       }
     }
   if(i ==1 ){
-	egs_ext <- data.frame(start = start_list, end = end_list, strand = rep(egs_fil$strand[i], 90))
+	egs_ext <- data.frame(start = start_list, end = end_list, strand = rep(egs_fil$strand[i], 270))
   } else{
-	egs_ext_temp <- data.frame(start = start_list, end = end_list, strand = rep(egs_fil$strand[i], 90))
+	egs_ext_temp <- data.frame(start = start_list, end = end_list, strand = rep(egs_fil$strand[i], 270))
 	egs_ext <- rbind(egs_ext, egs_ext_temp)
   }
 }

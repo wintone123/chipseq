@@ -83,7 +83,6 @@ echo "=============Let's Go!============="
 # Rscript readextend.R
 # echo "=============Done!============="
 
-
 # create new bed file
 # for file in ext_split_files/*_ext.txt
 # do 
