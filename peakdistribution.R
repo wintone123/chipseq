@@ -149,7 +149,7 @@ for(num in c(1:length(chrom_list))){
                                ranges = IRanges(start = gene_info_ext$start, end = gene_info_ext$end),
                                strand = Rle(gene_info_ext$strand))
     
-    # overlapp
+    # overlap
     for(i in c(1:length(bed_list))){
         if(i == 1){
             bin_test <- BinChipseq(eval(parse(text = bed_list[i])), gene_info_ext_G)
