@@ -43,7 +43,7 @@ print("database loaded")
  
 print("+++++++++++++++Loop Start+++++++++++++++")
 # analysis process
-for(gene_num in c(1:nrow(gene_df))){
+for(gene_num in 1:nrow(gene_df)){
   # load info
   gene <- gene_df[gene_num,]$external_gene_name
   print(paste0("target gene: ", gene))
@@ -68,7 +68,7 @@ for(gene_num in c(1:nrow(gene_df))){
   utr_5 <- eval(parse(text = gene_name))[c(1:4,9,10)]
   utr_5 <- na.omit(utr_5[!duplicated(utr_5),])
   utr_5 <- utr_5[order(utr_5$"5_utr_start"),]
-  for(i in c(1:nrow(utr_5))){
+  for(i in 1:nrow(utr_5)){
     if(i == 1){
       start <- utr_5[i,]$"5_utr_start"
       end <- utr_5[i,]$"5_utr_end"
@@ -92,7 +92,7 @@ for(gene_num in c(1:nrow(gene_df))){
   utr_3 <- eval(parse(text = gene_name))[c(1:4,11,12)]
   utr_3 <- na.omit(utr_3[!duplicated(utr_3),])
   utr_3 <- utr_3[order(utr_3$"3_utr_start"),]
-  for(i in c(1:nrow(utr_3))){
+  for(i in 1:nrow(utr_3)){
     if(i == 1){
       start <- utr_3[i,]$"3_utr_start"
       end <- utr_3[i,]$"3_utr_end"
@@ -116,7 +116,7 @@ for(gene_num in c(1:nrow(gene_df))){
   exon <- eval(parse(text = gene_name))[c(1:4,7,8)]
   exon <- na.omit(exon[!duplicated(exon),])
   exon <- exon[order(exon$exon_chrom_start),]
-  for(i in c(1:nrow(exon))){
+  for(i in 1:nrow(exon)){
     if(i == 1){
       start <- exon[i,]$exon_chrom_start
       end <- exon[i,]$exon_chrom_end
@@ -134,7 +134,7 @@ for(gene_num in c(1:nrow(gene_df))){
       }
     }
   }
-  for(i in c(1:(length(exon_list)/2))){
+  for(i in 1:(length(exon_list)/2)){
     if(i == 1){
       exon_extend <- data.frame("external_gene_name" = gene, "start" = exon_list[i*2-1], "end" = exon_list[i*2])
     } else{
@@ -147,7 +147,7 @@ for(gene_num in c(1:nrow(gene_df))){
                                ranges = IRanges(start = exon_extend$start, end = exon_extend$end),
                                strand = Rle("*"))
   if(length(exon_list) >= 4){
-    for(i in c(1:(length(exon_list)/2-1))){
+    for(i in 1:(length(exon_list)/2-1)){
       if(i == 1){
         intron_from_exon_extend <- data.frame("external_gene_name" = gene, "start" = exon_list[i*2]+1, "end" = exon_list[i*2+1]-1)
       } else{
@@ -167,7 +167,7 @@ for(gene_num in c(1:nrow(gene_df))){
   }
   
   # isolate extend intron and exon from extend intron
-  for(i in c(1:nrow(exon))){
+  for(i in 1:nrow(exon)){
     if(i == 1){
       start <- exon[i,]$exon_chrom_start
       end <- exon[i,]$exon_chrom_end
@@ -191,7 +191,7 @@ for(gene_num in c(1:nrow(gene_df))){
       }
     }
 
-  for(i in c(1:(length(exon_list_2)/2))){
+  for(i in 1:(length(exon_list_2)/2)){
     if(i == 1){
       exon_from_intron_extend <- data.frame("external_gene_name" = gene, "start" = exon_list_2[i*2-1], "end" = exon_list_2[i*2])
     } else{
@@ -205,7 +205,7 @@ for(gene_num in c(1:nrow(gene_df))){
                                            end = exon_from_intron_extend$end),
                                            strand = Rle("*"))
   if(length(exon_list_2) >= 4){
-    for(i in c(1:(length(exon_list_2)/2-1))){
+    for(i in 1:(length(exon_list_2)/2-1)){
       if(i == 1){
         intron_extend <- data.frame("external_gene_name" = gene, "start" = exon_list_2[i*2]+1, "end" = exon_list_2[i*2+1]-1)
       } else{

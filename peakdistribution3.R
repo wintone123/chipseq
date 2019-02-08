@@ -4,6 +4,7 @@ library(rtracklayer)
 library(IRanges)
 library(chipseq)
 library(biomaRt)
+library(dplyr)
 
 print("==========Let's go!==========")
 print("loading data......")
@@ -118,14 +119,15 @@ for (num in 1:length(chrom_list)){
                                       "chromosome_name", "start_position",
                                       "end_position", "strand", "gene_biotype"), 
                        mart = ds, filter = "chromosome_name", values = chrom)
+    gene_info <- distinct(gene_info, external_gene_name, .keep_all = TRUE)
     gene_info_G <- GRanges(seqnames = Rle(chrom_name),
                            ranges = IRanges(start = gene_info$start_position, end = gene_info$end_position),
                            strand = Rle("*"))
     gene_info_fil <- gene_info[unique(queryHits(findOverlaps(gene_info_G, overlap_peak))),]
     for (i in 1:nrow(gene_info_fil)) {
-        start <- 2*gene_info_fil$start_position[i] - gene_info_fil$end_position[i]
-        end <- 2*gene_info_fil$end_position[i] - gene_info_fil$start_position[i]
-        seq_list <- seq(start, end, length.out = 151)
+        start <- gene_info_fil$start_position[i] - 1000
+        end <- gene_info_fil$start_position[i] + 1000
+        seq_list <- seq(start, end, length.out = 31)
         start_list <- vector(length = length(seq_list)-1)
         end_list <- vector(length =  length(seq_list)-1)
         for (j in 1:length(seq_list)){
@@ -139,15 +141,16 @@ for (num in 1:length(chrom_list)){
             }
         }
         if (i == 1) {
-            gene_info_ext <- data.frame(start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 150))
+            gene_info_ext <- data.frame(name = rep(gene_info_fil$external_gene_name[i], 30), start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 30))
         } else {
-            gene_info_ext_temp <- data.frame(start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 150))
+            gene_info_ext_temp <- data.frame(name = rep(gene_info_fil$external_gene_name[i], 30), start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 30))
             gene_info_ext <- rbind(gene_info_ext, gene_info_ext_temp)
         }
     }
     gene_info_ext_G <- GRanges(seqnames = Rle(chrom_name),
                                ranges = IRanges(start = gene_info_ext$start, end = gene_info_ext$end),
-                               strand = Rle(gene_info_ext$strand))
+                               strand = Rle(gene_info_ext$strand),
+                               name = Rle(gene_info_ext$name))
     
     # overlap
     for (i in 1:length(bed_list)) {
@@ -160,30 +163,35 @@ for (num in 1:length(chrom_list)){
     }
     bin_test$score <- bin_test$score/length(bed_list)
     bin_control <- BinChipseq(eval(parse(text = "control")), gene_info_ext_G)
-    test_df_temp <- data.frame(position = c(1:150), chrom = rep(chrom_name, 150), Item = rep("sample", 150), Hits = rep(0, 150))
+    data_df <- data.frame(name = rep(NA, nrow(gene_info_fil)*60),
+                          chrom = rep(NA, nrow(gene_info_fil)*60),
+                          item = rep(NA, nrow(gene_info_fil)*60),
+                          position = rep(NA, nrow(gene_info_fil)*60),
+                          Hits = rep(NA, nrow(gene_info_fil)*60))
     for (i in 1:nrow(gene_info_fil)) {
-        if (as.logical(bin_test@strand[(i-1)*150+1] == "+")) {
-            sample_hits <- bin_test$score[((i-1)*150+1):(i*150)]
+        print(gene_info_fil$external_gene_name[i])
+        data_df[(60*i-59):(60*i),]$name <- rep(gene_info_fil$external_gene_name[i], 60)
+        data_df[(60*i-59):(60*i),]$chrom <- rep(chrom_name, 60)
+        data_df[(60*i-59):(60*i-30),]$item <- rep("test", 30)
+        data_df[(60*i-29):(60*i),]$item <- rep("control", 30)
+        data_df[(60*i-59):(60*i-30),]$position <- c(1:30)
+        data_df[(60*i-29):(60*i),]$position <- c(1:30)
+        if (as.logical(bin_test@strand[(i-1)*30+1] == "+")) {
+            data_df[(60*i-59):(60*i-30),]$Hits <- bin_test$score[((i-1)*30+1):(i*30)]
         } else {
-            sample_hits <- rev(bin_test$score[((i-1)*150+1):(i*150)])
+            data_df[(60*i-59):(60*i-30),]$Hits <- rev(bin_test$score[((i-1)*30+1):(i*30)])
         }
-        test_df_temp$Hits <- test_df_temp$Hits + sample_hits
+        if (as.logical(bin_control@strand[(i-1)*30+1] == "+")) {
+            data_df[(60*i-29):(60*i),]$Hits <- bin_control$score[((i-1)*30+1):(i*30)]
+        } else {
+            data_df[(60*i-29):(60*i),]$Hits <- rev(bin_control$score[((i-1)*30+1):(i*30)])
+        }
     }
-    control_df_temp <- data.frame(position = c(1:150), chrom = rep(chrom_name, 150), Item = rep("control", 150), Hits = rep(0, 150))
-    for (i in 1:nrow(gene_info_fil)) {
-        if (as.logical(bin_control@strand[(i-1)*150+1] == "+")) {
-            control_hits <- bin_control$score[((i-1)*150+1):(i*150)]
-        } else {
-            control_hits <- rev(bin_control$score[((i-1)*150+1):(i*150)])
-        }
-        control_df_temp$Hits <- control_df_temp$Hits + control_hits
-    } 
+
     if (num == 1) {
-        score <- test_df_temp
-        score <- rbind(score, control_df_temp)
+        score <- data_df
     } else {
-        score <- rbind(score, test_df_temp)
-        score <- rbind(score, control_df_temp)
+        score <- rbind(score, data_df)
     }
 
     # clean memory
@@ -196,6 +204,6 @@ for (num in 1:length(chrom_list)){
 }
 
 # output csv
-print(paste0("writing spread_on_gene.csv......"))
-write.csv(score, file = file.path(path, "peak_distribution.csv"))
+print(paste0("writing TSS_10kb......"))
+write.csv(score, file = file.path(path, "TSS_10kb.csv"))
 print("===========Finish!===========")

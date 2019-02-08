@@ -123,11 +123,17 @@ for (num in 1:length(chrom_list)){
                            strand = Rle("*"))
     gene_info_fil <- gene_info[unique(queryHits(findOverlaps(gene_info_G, overlap_peak))),]
     for (i in 1:nrow(gene_info_fil)) {
-        start <- 2*gene_info_fil$start_position[i] - gene_info_fil$end_position[i]
-        end <- 2*gene_info_fil$end_position[i] - gene_info_fil$start_position[i]
-        seq_list <- seq(start, end, length.out = 151)
-        start_list <- vector(length = length(seq_list)-1)
-        end_list <- vector(length =  length(seq_list)-1)
+        start <- gene_info_fil$start_position[i]
+        end <- gene_info_fil$end_position[i]
+        before_start <- start - 10000
+        after_end <- end + 10000
+        seq_list <- vector()
+        seq_list <- append(seq_list, seq(before_start, start, length.out = 51))
+        seq_list <- append(seq_list, seq(start, end, length.out = 101))
+        seq_list <- append(seq_list, seq(end, after_end, length.out = 51))
+        seq_list <- unique(seq_list)
+        start_list <- vector()
+        end_list <- vector()
         for (j in 1:length(seq_list)){
             if (j == 1) {
                 start_list[j] <- seq_list[j]
@@ -139,9 +145,9 @@ for (num in 1:length(chrom_list)){
             }
         }
         if (i == 1) {
-            gene_info_ext <- data.frame(start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 150))
+            gene_info_ext <- data.frame(start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 200))
         } else {
-            gene_info_ext_temp <- data.frame(start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 150))
+            gene_info_ext_temp <- data.frame(start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 200))
             gene_info_ext <- rbind(gene_info_ext, gene_info_ext_temp)
         }
     }
@@ -160,21 +166,21 @@ for (num in 1:length(chrom_list)){
     }
     bin_test$score <- bin_test$score/length(bed_list)
     bin_control <- BinChipseq(eval(parse(text = "control")), gene_info_ext_G)
-    test_df_temp <- data.frame(position = c(1:150), chrom = rep(chrom_name, 150), Item = rep("sample", 150), Hits = rep(0, 150))
+    test_df_temp <- data.frame(position = c(1:200), chrom = rep(chrom_name, 200), Item = rep("sample", 200), Hits = rep(0, 200))
     for (i in 1:nrow(gene_info_fil)) {
-        if (as.logical(bin_test@strand[(i-1)*150+1] == "+")) {
-            sample_hits <- bin_test$score[((i-1)*150+1):(i*150)]
+        if (as.logical(bin_test@strand[(i-1)*200+1] == "+")) {
+            sample_hits <- bin_test$score[((i-1)*200+1):(i*200)]
         } else {
-            sample_hits <- rev(bin_test$score[((i-1)*150+1):(i*150)])
+            sample_hits <- rev(bin_test$score[((i-1)*200+1):(i*200)])
         }
         test_df_temp$Hits <- test_df_temp$Hits + sample_hits
     }
-    control_df_temp <- data.frame(position = c(1:150), chrom = rep(chrom_name, 150), Item = rep("control", 150), Hits = rep(0, 150))
+    control_df_temp <- data.frame(position = c(1:200), chrom = rep(chrom_name, 200), Item = rep("control", 200), Hits = rep(0, 200))
     for (i in 1:nrow(gene_info_fil)) {
-        if (as.logical(bin_control@strand[(i-1)*150+1] == "+")) {
-            control_hits <- bin_control$score[((i-1)*150+1):(i*150)]
+        if (as.logical(bin_control@strand[(i-1)*200+1] == "+")) {
+            control_hits <- bin_control$score[((i-1)*200+1):(i*200)]
         } else {
-            control_hits <- rev(bin_control$score[((i-1)*150+1):(i*150)])
+            control_hits <- rev(bin_control$score[((i-1)*200+1):(i*200)])
         }
         control_df_temp$Hits <- control_df_temp$Hits + control_hits
     } 
@@ -197,5 +203,5 @@ for (num in 1:length(chrom_list)){
 
 # output csv
 print(paste0("writing spread_on_gene.csv......"))
-write.csv(score, file = file.path(path, "peak_distribution.csv"))
+write.csv(score, file = file.path(path, "peak_distribution_1.csv"))
 print("===========Finish!===========")
