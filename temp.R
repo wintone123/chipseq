@@ -296,4 +296,4 @@ tss_fil2 <- select(tss_fil, c(4:33))
 tss_mat <- as.matrix(tss_fil2)
 rownames(tss_mat) <- tss_fil$name
 pheatmap(tss_mat, cluster_rows = FALSE, cluster_cols = FALSE,
-         show_rownames = FALSE, show_colnames = FALSEwidth = 3)
+         show_rownames = FALSE, show_colnames = FALSE, width = 3)
