@@ -68,11 +68,14 @@ OverlapPeaks <- function(GRanges_1, GRanges_2){
     return(new_GRanges)
 }
 
-# import info
+# parameter set
 path <- "/mnt/c/chipseq/test2"
 bed_file_list <- list.files(file.path(path, "split_files"))
 peak_file_list <- list.files(file.path(path, "narrowpeak_split_files"))
 chrom_list <- c(1:19, "X", "Y")
+up_position <- 1000
+down_position <- 1000
+bin_num <- 30
 mart <- useMart(biomart = "ENSEMBL_MART_ENSEMBL",
                 dataset = "mmusculus_gene_ensembl",  
                 host = "jul2018.archive.ensembl.org")  
@@ -125,9 +128,9 @@ for (num in 1:length(chrom_list)){
                            strand = Rle("*"))
     gene_info_fil <- gene_info[unique(queryHits(findOverlaps(gene_info_G, overlap_peak))),]
     for (i in 1:nrow(gene_info_fil)) {
-        start <- gene_info_fil$start_position[i] - 1000
-        end <- gene_info_fil$start_position[i] + 1000
-        seq_list <- seq(start, end, length.out = 31)
+        start <- gene_info_fil$start_position[i] - up_position
+        end <- gene_info_fil$start_position[i] + down_position
+        seq_list <- seq(start, end, length.out = bin_num+1)
         start_list <- vector(length = length(seq_list)-1)
         end_list <- vector(length =  length(seq_list)-1)
         for (j in 1:length(seq_list)){
@@ -141,9 +144,9 @@ for (num in 1:length(chrom_list)){
             }
         }
         if (i == 1) {
-            gene_info_ext <- data.frame(name = rep(gene_info_fil$external_gene_name[i], 30), start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 30))
+            gene_info_ext <- data.frame(name = rep(gene_info_fil$external_gene_name[i], bin_num), start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], bin_num))
         } else {
-            gene_info_ext_temp <- data.frame(name = rep(gene_info_fil$external_gene_name[i], 30), start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], 30))
+            gene_info_ext_temp <- data.frame(name = rep(gene_info_fil$external_gene_name[i], bin_num), start = start_list, end = end_list, strand = rep(gene_info_fil$strand[i], bin_num))
             gene_info_ext <- rbind(gene_info_ext, gene_info_ext_temp)
         }
     }
@@ -163,28 +166,28 @@ for (num in 1:length(chrom_list)){
     }
     bin_test$score <- bin_test$score/length(bed_list)
     bin_control <- BinChipseq(eval(parse(text = "control")), gene_info_ext_G)
-    data_df <- data.frame(name = rep(NA, nrow(gene_info_fil)*60),
-                          chrom = rep(NA, nrow(gene_info_fil)*60),
-                          item = rep(NA, nrow(gene_info_fil)*60),
-                          position = rep(NA, nrow(gene_info_fil)*60),
-                          Hits = rep(NA, nrow(gene_info_fil)*60))
+    data_df <- data.frame(name = rep(NA, nrow(gene_info_fil)*bin_num*2),
+                          chrom = rep(NA, nrow(gene_info_fil)*bin_num*2),
+                          item = rep(NA, nrow(gene_info_fil)*bin_num*2),
+                          position = rep(NA, nrow(gene_info_fil)*bin_num*2),
+                          Hits = rep(NA, nrow(gene_info_fil)*bin_num*2))
     for (i in 1:nrow(gene_info_fil)) {
         print(gene_info_fil$external_gene_name[i])
-        data_df[(60*i-59):(60*i),]$name <- rep(gene_info_fil$external_gene_name[i], 60)
-        data_df[(60*i-59):(60*i),]$chrom <- rep(chrom_name, 60)
-        data_df[(60*i-59):(60*i-30),]$item <- rep("test", 30)
-        data_df[(60*i-29):(60*i),]$item <- rep("control", 30)
-        data_df[(60*i-59):(60*i-30),]$position <- c(1:30)
-        data_df[(60*i-29):(60*i),]$position <- c(1:30)
-        if (as.logical(bin_test@strand[(i-1)*30+1] == "+")) {
-            data_df[(60*i-59):(60*i-30),]$Hits <- bin_test$score[((i-1)*30+1):(i*30)]
+        data_df[(bin_num*2*i-bin_num*2+1):(bin_num*2*i),]$name <- rep(gene_info_fil$external_gene_name[i], bin_num*2)
+        data_df[(bin_num*2*i-bin_num*2+1):(bin_num*2*i),]$chrom <- rep(chrom_name, bin_num*2)
+        data_df[(bin_num*2*i-bin_num*2+1):(bin_num*2*i-bin_num),]$item <- rep("test", bin_num)
+        data_df[(bin_num*2*i-bin_num+1):(bin_num*2*i),]$item <- rep("control", bin_num)
+        data_df[(bin_num*2*i-bin_num*2+1):(bin_num*2*i-bin_num),]$position <- c(1:bin_num)
+        data_df[(bin_num*2*i-bin_num+1):(bin_num*2*i),]$position <- c(1:bin_num)
+        if (as.logical(bin_test@strand[(i-1)*bin_num+1] == "+")) {
+            data_df[(bin_num*2*i-bin_num*2+1):(bin_num*2*i-bin_num),]$Hits <- bin_test$score[((i-1)*bin_num+1):(i*bin_num)]
         } else {
-            data_df[(60*i-59):(60*i-30),]$Hits <- rev(bin_test$score[((i-1)*30+1):(i*30)])
+            data_df[(bin_num*2*i-bin_num*2+1):(bin_num*2*i-bin_num),]$Hits <- rev(bin_test$score[((i-1)*bin_num+1):(i*bin_num)])
         }
-        if (as.logical(bin_control@strand[(i-1)*30+1] == "+")) {
-            data_df[(60*i-29):(60*i),]$Hits <- bin_control$score[((i-1)*30+1):(i*30)]
+        if (as.logical(bin_control@strand[(i-1)*bin_num+1] == "+")) {
+            data_df[(bin_num*2*i-bin_num+1):(bin_num*2*i),]$Hits <- bin_control$score[((i-1)*bin_num+1):(i*bin_num)]
         } else {
-            data_df[(60*i-29):(60*i),]$Hits <- rev(bin_control$score[((i-1)*30+1):(i*30)])
+            data_df[(bin_num*2*i-bin_num+1):(bin_num*2*i),]$Hits <- rev(bin_control$score[((i-1)*bin_num+1):(i*bin_num)])
         }
     }
 

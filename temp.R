@@ -68,6 +68,21 @@ overlap_peaks <- function(GRanges_1, GRanges_2){
                            strand = Rle("*"))
     return(new_GRanges)
 }
+TileSequence <- function(seqname, start, end, tilewidth){
+  start_list <- seq(start, end, by = tilewidth)
+  end_list <- start_list + tilewidth -1
+  if (start_list[length(start_list)] == end) {
+    end_list <- end_list[c(1:length(end_list)-1)]
+    end_list[length(end_list)] <- start_list[length(start_list)]
+    start_list <- start_list[c(1:length(start_list)-1)]
+  } else {
+    end_list[length(end_list)] <- end
+  }
+  GRanges_temp <- GRanges(seqnames = Rle(seqname),
+                          ranges = IRanges(start = start_list, end = end_list),
+                          strand = Rle("*"))
+  return(GRanges_temp)
+}
 
 # load peak file
 rep1 <- import.bed("c:/chipseq/test4/rep1_best_chr6.bed")
@@ -117,7 +132,7 @@ for (i in 1:nrow(egs)) {
     }
 }
 tss_chr6 <- GRanges(seqnames = Rle("chr6"),
-                    ranges = IRanges(start = egs$TSS-200, end = egs$TSS+200),
+                    ranges = IRanges(start = egs$TSS-1000, end = egs$TSS+1000),
                     strand = Rle("*"))
 overlap_peaks <- overlap_peaks(rep1_peak_1, rep2_peak_1)
 egs_fil <- egs[unique(queryHits(findOverlaps(tss_chr6, overlap_peaks))),]
@@ -296,4 +311,19 @@ tss_fil2 <- select(tss_fil, c(4:33))
 tss_mat <- as.matrix(tss_fil2)
 rownames(tss_mat) <- tss_fil$name
 pheatmap(tss_mat, cluster_rows = FALSE, cluster_cols = FALSE,
-         show_rownames = FALSE, show_colnames = FALSE, width = 3)
+         show_rownames = FALSE, show_colnames = FALSE, cellwidth = 3)
+
+# heatmap2
+cpg_fil <- cpg_on_TSS_10kb %>% spread(key = position, value = Hits) 
+cpg_fil2 <- select(cpg_fil, c(3:52)) 
+cpg_mat <- as.matrix(cpg_fil2)
+rownames(cpg_mat) <- cpg_fil$name
+pheatmap(cpg_mat, cluster_rows = FALSE, cluster_cols = FALSE,
+         show_rownames = FALSE, show_colnames = FALSE, cellwidth = 3)
+
+# cpf h3k27me
+cpg_chr6_fil <- data.frame(chromosome_name = cpg_chr6_G@seqnames,
+                                start_position = start(cpg_chr6),
+                                end_position = end(cpg_chr6),
+                                strand = cpg_chr6@strand,
+                                stringsAsFactors = FALSE)
