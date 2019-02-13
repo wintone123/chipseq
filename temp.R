@@ -327,3 +327,12 @@ cpg_chr6_fil <- data.frame(chromosome_name = cpg_chr6_G@seqnames,
                                 end_position = end(cpg_chr6),
                                 strand = cpg_chr6@strand,
                                 stringsAsFactors = FALSE)
+
+# heatmap3
+h3k27_on_cpg$num <- rep(1:16009, each = 60)
+h3k27_on_cpg_fil <- h3k27_on_cpg %>% spread(key = position, value = Hits) 
+h3k27_on_cpg_fil2 <- select(h3k27_on_cpg_fil, c(3:62)) 
+h3k27_on_cpg_mat <- as.matrix(h3k27_on_cpg_fil2)
+rownames(h3k27_on_cpg_mat) <- h3k27_on_cpg_fil$num
+pheatmap(h3k27_on_cpg_mat, cluster_rows = FALSE, cluster_cols = FALSE,
+         show_rownames = FALSE, show_colnames = FALSE, cellwidth = 3)

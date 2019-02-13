@@ -57,11 +57,9 @@ PrepareChipseq <- function (reads) {
 # parameter set
 bed_path <- "/mnt/c/chipseq/test2/split_files"
 path <- "/mnt/c/chipseq/test7/"
-cpg_file <-"cpg_mm10.bed"
-up_position <-400
-down_position <- 400
+cpg_file <-"cpg_mm10_2.bed"
 chrom_list <- c(1:19,"X","Y")
-bin_num <- 30
+bin_num <- 60
 
 # load file
 cpg_mm10 <- import.bed(file.path(path, cpg_file))
@@ -81,6 +79,7 @@ for (num in 1:length(chrom_list)){
             chrom_bed <- PrepareChipseq(import.bed(file.path(bed_path, file)))
         }
     }
+    length_bed <- length(chrom_bed) / 1000000
 
     # import gene info
     cpg <- cpg_mm10[cpg_mm10@seqnames == chrom_name]
@@ -101,7 +100,7 @@ for (num in 1:length(chrom_list)){
     for (i in 1:nrow(cpg_df)) {
         data_df[(bin_num*(i-1)+1):(bin_num*i),]$chrom <- rep(chrom_name, bin_num)
         data_df[(bin_num*(i-1)+1):(bin_num*i),]$position <- c(1:bin_num)
-        data_df[(bin_num*(i-1)+1):(bin_num*i),]$Hits <- bin_cpg$score[((i-1)*bin_num+1):(i*bin_num)]
+        data_df[(bin_num*(i-1)+1):(bin_num*i),]$Hits <- bin_cpg$score[((i-1)*bin_num+1):(i*bin_num)] / length_bed
     }
 
     if (num == 1) {
@@ -120,6 +119,6 @@ for (num in 1:length(chrom_list)){
 }
 
 # output csv
-print(paste0("writing h3k27_on_cpg......"))
-write.csv(score, file = file.path(path, "h3k27_on_cpg.csv"))
+print(paste0("writing h3k27_on_cpg_2......"))
+write.csv(score, file = file.path(path, "h3k27_on_cpg_2.csv"))
 print("===========Finish!===========")
