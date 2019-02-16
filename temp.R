@@ -9,17 +9,17 @@ library(Gviz)
 library(tidyverse)
 
 # load function
-prepareChipseq <- function(reads){
+prepareChipseq <- function (reads) {
   frag_len = median(estimate.mean.fraglen(reads))
   cat(paste0('median size is ', round(frag_len)))
   reads_extended = resize(reads, width = frag_len)
   return(trim(reads_extended))
 }
-BinChipseq <- function(reads, bins){
+BinChipseq <- function (reads, bins) {
   mcols(bins)$score = countOverlaps(bins, reads)
   return(bins)
 }
-import_np <- function(path){
+import_np <- function (path) {
   temp <- read.delim2(path, quote = "/", head = FALSE)
   GRanges_temp <- GRanges(seqnames = Rle(temp[,1]),
                           ranges = IRanges(start = temp[,2], end = temp[,3]),
@@ -28,7 +28,7 @@ import_np <- function(path){
                           score = as.numeric(temp[,5]))
   return(GRanges_temp)
 }
-overlap_peaks <- function(GRanges_1, GRanges_2){
+overlap_peaks <- function (GRanges_1, GRanges_2) {
     df_1 <- data.frame(start(GRanges_1), end(GRanges_1))
     df_2 <- data.frame(start(GRanges_2), end(GRanges_2))
     start_out <- vector()
@@ -68,7 +68,7 @@ overlap_peaks <- function(GRanges_1, GRanges_2){
                            strand = Rle("*"))
     return(new_GRanges)
 }
-TileSequence <- function(seqname, start, end, tilewidth){
+TileSequence <- function (seqname, start, end, tilewidth) {
   start_list <- seq(start, end, by = tilewidth)
   end_list <- start_list + tilewidth -1
   if (start_list[length(start_list)] == end) {
@@ -321,7 +321,7 @@ rownames(cpg_mat) <- cpg_fil$name
 pheatmap(cpg_mat, cluster_rows = FALSE, cluster_cols = FALSE,
          show_rownames = FALSE, show_colnames = FALSE, cellwidth = 3)
 
-# cpf h3k27me
+# cpg h3k27me
 cpg_chr6_fil <- data.frame(chromosome_name = cpg_chr6_G@seqnames,
                                 start_position = start(cpg_chr6),
                                 end_position = end(cpg_chr6),

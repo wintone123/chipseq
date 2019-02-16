@@ -9,7 +9,7 @@ library(dplyr)
 print("==========Let's go!==========")
 print("loading data......")
 # load function
-BinChipseq <- function(reads, bins){
+BinChipseq <- function(reads, bins) {
   mcols(bins)$score = countOverlaps(bins, reads)
   return(bins)
 }
