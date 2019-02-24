@@ -335,4 +335,4 @@ h3k27_on_cpg_fil2 <- select(h3k27_on_cpg_fil, c(3:62))
 h3k27_on_cpg_mat <- as.matrix(h3k27_on_cpg_fil2)
 rownames(h3k27_on_cpg_mat) <- h3k27_on_cpg_fil$num
 pheatmap(h3k27_on_cpg_mat, cluster_rows = FALSE, cluster_cols = FALSE,
-         show_rownames = FALSE, show_colnames = FALSE, cellwidth = 3)
+         show_rownames = FALSE, show_colnames = FALSE, cellwidth = 3)  
