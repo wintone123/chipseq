@@ -19,6 +19,6 @@ do
     for chr in $chr_list
     do
         echo "making chr "$chr" ......"
-        cat $dir"/"$dir".bed" | parallel --pipe awk -va=$chr \'{if\(\$1 == a \&\& \$5 \>= 40\) print \$0}\' | awk -va=$chr '{if($1 == a && $5 >= 40) print $0}' > $dir"/"$dir"_chr"$chr".bed"
+        cat $dir"/"$dir".bed" | parallel --pipe -j 2 awk -va=$chr \'{if\(\$1 == a \&\& \$5 \>= 40\) print \$0}\' | awk -va=$chr '{if($1 == a && $5 >= 40) print $0}' > $dir"/"$dir"_chr"$chr".bed"
     done
 done
